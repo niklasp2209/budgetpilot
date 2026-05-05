@@ -3,5 +3,11 @@ plugins {
 }
 
 dependencies {
+    add("implementation", platform("org.springframework.boot:spring-boot-dependencies:4.0.6"))
     add("implementation", project(":apps:backend:modules:shared"))
+    add("implementation", "org.springframework.boot:spring-boot-starter-webmvc")
+    add("implementation", "org.springframework.boot:spring-boot-starter-security")
+    add("implementation", "org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    add("implementation", "org.springframework.boot:spring-boot-starter-validation")
+    add("implementation", "org.springframework.security:spring-security-oauth2-jose")
 }

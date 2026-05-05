@@ -25,6 +25,12 @@ subprojects {
         }
 
         dependencies {
+            "compileOnly"("org.jspecify:jspecify:1.0.0")
+            "testCompileOnly"("org.jspecify:jspecify:1.0.0")
+            "compileOnly"("org.projectlombok:lombok:1.18.38")
+            "annotationProcessor"("org.projectlombok:lombok:1.18.38")
+            "testCompileOnly"("org.projectlombok:lombok:1.18.38")
+            "testAnnotationProcessor"("org.projectlombok:lombok:1.18.38")
             "testImplementation"(platform("org.junit:junit-bom:6.0.0"))
             "testImplementation"("org.junit.jupiter:junit-jupiter")
             "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
