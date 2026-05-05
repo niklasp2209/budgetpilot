@@ -1,5 +1,6 @@
 plugins {
-    id("java-library")
+    id("org.springframework.boot") version "4.0.6"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 dependencies {
@@ -12,4 +13,6 @@ dependencies {
     add("implementation", project(":apps:backend:modules:reporting"))
     add("implementation", project(":apps:backend:modules:audit"))
     add("implementation", project(":apps:backend:modules:shared"))
+    add("implementation", "org.springframework.boot:spring-boot-starter-web")
+    add("implementation", "org.springframework.boot:spring-boot-starter-actuator")
 }

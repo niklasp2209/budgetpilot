@@ -10,10 +10,9 @@ on:
 jobs:
   build-docker-images:
     runs-on: ubuntu-latest
-    if: ${{ false }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Placeholder
-        run: echo "Docker image build is scaffolded and can be enabled later."
+      - name: Build backend image
+        run: docker build -f apps/backend/Dockerfile -t budgetpilot-backend:ci .
