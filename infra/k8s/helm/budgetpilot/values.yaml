@@ -1,0 +1,24 @@
+global:
+  environment: dev
+
+backend:
+  enabled: false
+  image:
+    repository: ghcr.io/your-org/budgetpilot-backend
+    tag: latest
+  service:
+    port: 8080
+
+frontend:
+  enabled: false
+  image:
+    repository: ghcr.io/your-org/budgetpilot-frontend
+    tag: latest
+  service:
+    port: 3000
+
+postgres:
+  enabled: false
+
+redis:
+  enabled: false
