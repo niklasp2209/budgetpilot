@@ -12,6 +12,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -22,6 +23,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class AuthService {
     private final AuthUserStore authUserStore;
+    private final RefreshTokenStore refreshTokenStore;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
 
@@ -38,12 +40,13 @@ public class AuthService {
                 "Password hash must not be null."
         );
 
-        boolean created = authUserStore.createUser(new AuthUser(normalizedEmail, passwordHash));
-        if (!created) {
-            throw new EmailAlreadyExistsException("Email is already registered.");
-        }
+        AuthUser createdUser = authUserStore.createUser(normalizedEmail, passwordHash)
+                .orElseThrow(() -> new EmailAlreadyExistsException("Email is already registered."));
 
-        return tokenService.issueTokenPair(normalizedEmail);
+        TokenPair tokenPair = tokenService.issueTokenPair(createdUser.email());
+        Instant refreshExpiresAt = tokenService.validateAndExtractRefreshExpiration(tokenPair.refreshToken());
+        refreshTokenStore.storeNew(createdUser.id(), tokenPair.refreshToken(), refreshExpiresAt);
+        return tokenPair;
     }
 
     /**
@@ -61,7 +64,10 @@ public class AuthService {
             throw new InvalidCredentialsException("Email or password is invalid.");
         }
 
-        return tokenService.issueTokenPair(user.email());
+        TokenPair tokenPair = tokenService.issueTokenPair(user.email());
+        Instant refreshExpiresAt = tokenService.validateAndExtractRefreshExpiration(tokenPair.refreshToken());
+        refreshTokenStore.storeNew(user.id(), tokenPair.refreshToken(), refreshExpiresAt);
+        return tokenPair;
     }
 
     /**
@@ -72,8 +78,17 @@ public class AuthService {
      */
     public @NonNull TokenPair refresh(@NonNull RefreshRequest request) {
         String email = tokenService.validateAndExtractRefreshSubject(request.refreshToken());
-        return authUserStore.findByEmail(email)
-                .map(user -> tokenService.issueTokenPair(user.email()))
+        AuthUser user = authUserStore.findByEmail(email)
                 .orElseThrow(() -> new InvalidCredentialsException("Email or password is invalid."));
+
+        TokenPair newTokenPair = tokenService.issueTokenPair(user.email());
+        Instant refreshExpiresAt = tokenService.validateAndExtractRefreshExpiration(newTokenPair.refreshToken());
+        refreshTokenStore.rotate(
+                user.id(),
+                request.refreshToken(),
+                newTokenPair.refreshToken(),
+                refreshExpiresAt
+        );
+        return newTokenPair;
     }
 }

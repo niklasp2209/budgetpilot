@@ -27,7 +27,7 @@ public class AuthUserStore {
      */
     public @NonNull Optional<AuthUser> findByEmail(@NonNull String email) {
         return authUserRepository.findByEmail(normalize(email))
-                .map(entity -> new AuthUser(entity.getEmail(), entity.getPasswordHash()));
+                .map(entity -> new AuthUser(entity.getId(), entity.getEmail(), entity.getPasswordHash()));
     }
 
     /**
@@ -37,15 +37,15 @@ public class AuthUserStore {
      * @return true if the user was created, otherwise false
      */
     @Transactional
-    public boolean createUser(@NonNull AuthUser user) {
-        String normalizedEmail = normalize(user.email());
+    public @NonNull Optional<AuthUser> createUser(@NonNull String email, @NonNull String passwordHash) {
+        String normalizedEmail = normalize(email);
         boolean exists = authUserRepository.findByEmail(normalizedEmail).isPresent();
         if (exists) {
-            return false;
+            return Optional.empty();
         }
-        AuthUserEntity entity = AuthUserEntity.createNew(normalizedEmail, user.passwordHash());
-        authUserRepository.save(entity);
-        return true;
+        AuthUserEntity entity = AuthUserEntity.createNew(normalizedEmail, passwordHash);
+        AuthUserEntity saved = authUserRepository.save(entity);
+        return Optional.of(new AuthUser(saved.getId(), saved.getEmail(), saved.getPasswordHash()));
     }
 
     /**

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * @author Niklas Petermeier
@@ -49,20 +50,34 @@ public class TokenService {
      * @return the subject from the valid refresh token
      */
     public @NonNull String validateAndExtractRefreshSubject(@NonNull String refreshToken) {
-        Jwt jwt = decode(refreshToken);
-        String tokenType = Optional.ofNullable(jwt.getClaimAsString(TOKEN_TYPE_CLAIM)).orElse("");
-        if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
-            throw new InvalidTokenException("Refresh token is invalid.");
-        }
-
+        Jwt jwt = validateAndDecodeRefreshToken(refreshToken);
         return Optional.ofNullable(jwt.getSubject())
                 .filter(value -> !value.isBlank())
                 .orElseThrow(() -> new InvalidTokenException("Refresh token is invalid."));
     }
 
+    public @NonNull Instant validateAndExtractRefreshExpiration(@NonNull String refreshToken) {
+        Jwt jwt = validateAndDecodeRefreshToken(refreshToken);
+        Instant expiresAt = jwt.getExpiresAt();
+        if (expiresAt == null) {
+            throw new InvalidTokenException("Refresh token is invalid.");
+        }
+        return expiresAt;
+    }
+
+    private @NonNull Jwt validateAndDecodeRefreshToken(@NonNull String refreshToken) {
+        Jwt jwt = decode(refreshToken);
+        String tokenType = Optional.ofNullable(jwt.getClaimAsString(TOKEN_TYPE_CLAIM)).orElse("");
+        if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
+            throw new InvalidTokenException("Refresh token is invalid.");
+        }
+        return jwt;
+    }
+
     private String createToken(@NonNull String subject, @NonNull String tokenType, @NonNull Duration ttl) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(subject)
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
