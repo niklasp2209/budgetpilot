@@ -31,6 +31,13 @@ public class OrganizationService {
     private final OrganizationMembershipRepository organizationMembershipRepository;
     private final AuthUserRepository authUserRepository;
 
+    /**
+     * Creates a new organization and owner membership.
+     *
+     * @param request organization creation request
+     * @param authenticatedEmail authenticated requester email
+     * @return created organization entity
+     */
     @Transactional
     public @NonNull OrganizationEntity createOrganization(
             @NonNull CreateOrganizationRequest request,
@@ -53,6 +60,13 @@ public class OrganizationService {
         return organization;
     }
 
+    /**
+     * Returns one organization if requester is member.
+     *
+     * @param organizationId organization identifier
+     * @param authenticatedEmail authenticated requester email
+     * @return organization entity
+     */
     @Transactional(readOnly = true)
     public @NonNull OrganizationEntity getOrganization(
             @NonNull UUID organizationId,
@@ -64,6 +78,13 @@ public class OrganizationService {
                 .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
     }
 
+    /**
+     * Returns members for an organization if requester is member.
+     *
+     * @param organizationId organization identifier
+     * @param authenticatedEmail authenticated requester email
+     * @return membership entities
+     */
     @Transactional(readOnly = true)
     public @NonNull List<OrganizationMembershipEntity> getMembers(
             @NonNull UUID organizationId,
@@ -74,11 +95,23 @@ public class OrganizationService {
         return organizationMembershipRepository.findByIdOrganizationId(organizationId);
     }
 
+    /**
+     * Resolves a user by normalized email.
+     *
+     * @param email raw email value
+     * @return resolved auth user entity
+     */
     private @NonNull AuthUserEntity findUserByEmail(@NonNull String email) {
         return authUserRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
                 .orElseThrow(() -> new OrganizationAccessDeniedException("Authenticated user was not found."));
     }
 
+    /**
+     * Verifies that a user is a member of the organization.
+     *
+     * @param organizationId organization identifier
+     * @param userId user identifier
+     */
     private void ensureMembership(@NonNull UUID organizationId, @NonNull UUID userId) {
         boolean isMember = organizationMembershipRepository
                 .findByIdOrganizationIdAndIdUserId(organizationId, userId)
@@ -88,6 +121,12 @@ public class OrganizationService {
         }
     }
 
+    /**
+     * Normalizes slug values.
+     *
+     * @param slug raw slug
+     * @return normalized slug
+     */
     private @NonNull String normalizeSlug(@NonNull String slug) {
         return slug.trim().toLowerCase(Locale.ROOT);
     }

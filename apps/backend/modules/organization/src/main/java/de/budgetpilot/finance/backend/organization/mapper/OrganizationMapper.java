@@ -13,10 +13,22 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class OrganizationMapper {
+    /**
+     * Maps organization entity to API response.
+     *
+     * @param entity organization entity
+     * @return organization response
+     */
     public @NonNull OrganizationResponse toOrganizationResponse(@NonNull OrganizationEntity entity) {
         return new OrganizationResponse(entity.getId(), entity.getName(), entity.getSlug());
     }
 
+    /**
+     * Maps membership entity to API response.
+     *
+     * @param entity membership entity
+     * @return organization member response
+     */
     public @NonNull OrganizationMemberResponse toOrganizationMemberResponse(@NonNull OrganizationMembershipEntity entity) {
         return new OrganizationMemberResponse(
                 entity.getId().getUserId(),

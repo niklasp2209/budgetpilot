@@ -29,6 +29,13 @@ public class OrganizationController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    /**
+     * Creates a new organization for the authenticated user.
+     *
+     * @param request organization creation request
+     * @param jwt authenticated JWT token
+     * @return created organization response
+     */
     public @NonNull OrganizationResponse createOrganization(
         @Valid @RequestBody @NonNull CreateOrganizationRequest request,
         @AuthenticationPrincipal @NonNull Jwt jwt
@@ -40,6 +47,13 @@ public class OrganizationController {
     }
 
     @GetMapping("/{organizationId}")
+    /**
+     * Returns one organization visible to the authenticated member.
+     *
+     * @param organizationId organization identifier
+     * @param jwt authenticated JWT token
+     * @return organization response
+     */
     public @NonNull OrganizationResponse getOrganization(
         @PathVariable @NonNull UUID organizationId,
         @AuthenticationPrincipal @NonNull Jwt jwt
@@ -51,6 +65,13 @@ public class OrganizationController {
     }
 
     @GetMapping("/{organizationId}/members")
+    /**
+     * Returns all members of one organization.
+     *
+     * @param organizationId organization identifier
+     * @param jwt authenticated JWT token
+     * @return list of organization members
+     */
     public @NonNull List<OrganizationMemberResponse> getMembers(
         @PathVariable @NonNull UUID organizationId,
         @AuthenticationPrincipal @NonNull Jwt jwt
@@ -61,6 +82,12 @@ public class OrganizationController {
             .toList();
     }
 
+    /**
+     * Extracts email from JWT subject.
+     *
+     * @param jwt authenticated JWT token
+     * @return subject email
+     */
     private @NonNull String extractEmail(@NonNull Jwt jwt) {
         String subject = jwt.getSubject();
         if (subject == null || subject.isBlank()) {

@@ -16,18 +16,36 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class OrganizationExceptionHandler {
+    /**
+     * Maps duplicate slug errors to HTTP 409.
+     *
+     * @param exception duplicate slug exception
+     * @return conflict response payload
+     */
     @ExceptionHandler(OrganizationSlugAlreadyExistsException.class)
     ResponseEntity<ErrorResponse> handleSlugExists(@NonNull OrganizationSlugAlreadyExistsException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("ORGANIZATION_SLUG_EXISTS", exception.getMessage()));
     }
 
+    /**
+     * Maps organization not found errors to HTTP 404.
+     *
+     * @param exception not found exception
+     * @return not found response payload
+     */
     @ExceptionHandler(OrganizationNotFoundException.class)
     ResponseEntity<ErrorResponse> handleNotFound(@NonNull OrganizationNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("ORGANIZATION_NOT_FOUND", exception.getMessage()));
     }
 
+    /**
+     * Maps organization access errors to HTTP 403.
+     *
+     * @param exception access denied exception
+     * @return forbidden response payload
+     */
     @ExceptionHandler(OrganizationAccessDeniedException.class)
     ResponseEntity<ErrorResponse> handleForbidden(@NonNull OrganizationAccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
