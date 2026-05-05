@@ -1,4 +1,5 @@
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
@@ -38,6 +39,10 @@ subprojects {
 
         tasks.withType<Test>().configureEach {
             useJUnitPlatform()
+        }
+
+        tasks.withType<JavaCompile>().configureEach {
+            options.compilerArgs.add("-parameters")
         }
     }
 }

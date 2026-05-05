@@ -6,6 +6,7 @@ import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -18,6 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthUserStore {
     private final AuthUserRepository authUserRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * Finds a user by email.
@@ -33,8 +35,9 @@ public class AuthUserStore {
     /**
      * Creates a user if the email is not already present.
      *
-     * @param user user to store
-     * @return true if the user was created, otherwise false
+     * @param email user email to store
+     * @param passwordHash hashed password
+     * @return optional created user if created, otherwise empty
      */
     @Transactional
     public @NonNull Optional<AuthUser> createUser(@NonNull String email, @NonNull String passwordHash) {
@@ -49,11 +52,14 @@ public class AuthUserStore {
     }
 
     /**
-     * Clears all users from the in-memory store.
+     * Clears all users from the database.
      */
     @Transactional
     public void clear() {
-        authUserRepository.deleteAll();
+        jdbcTemplate.execute("DELETE FROM organization_memberships");
+        jdbcTemplate.execute("DELETE FROM organizations");
+        jdbcTemplate.execute("DELETE FROM refresh_tokens");
+        jdbcTemplate.execute("DELETE FROM users");
     }
 
     private String normalize(@NonNull String email) {
