@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @since 05.05.2026
  */
 @SpringBootTest
-class TokenServiceTest {
+class TokenServiceTest extends AbstractPostgresIntegrationTest {
     @Autowired
     private TokenService tokenService;
 

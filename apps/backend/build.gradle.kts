@@ -15,8 +15,13 @@ dependencies {
     add("implementation", project(":apps:backend:modules:shared"))
     add("implementation", "org.springframework.boot:spring-boot-starter-webmvc")
     add("implementation", "org.springframework.boot:spring-boot-starter-actuator")
+    add("implementation", "org.flywaydb:flyway-core")
+    add("implementation", "org.flywaydb:flyway-database-postgresql")
+    add("runtimeOnly", "org.postgresql:postgresql")
     add("testImplementation", "org.springframework.boot:spring-boot-starter-json")
     add("testImplementation", "org.springframework.boot:spring-boot-starter-test")
+    add("testImplementation", "org.springframework.boot:spring-boot-testcontainers")
     add("testImplementation", "org.springframework.boot:spring-boot-starter-webmvc-test")
     add("testImplementation", "org.springframework.security:spring-security-test")
+    add("testImplementation", "org.testcontainers:testcontainers")
 }
