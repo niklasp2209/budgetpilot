@@ -11,3 +11,9 @@ management:
     health:
       probes:
         enabled: true
+
+auth:
+  jwt:
+    secret: change-me-change-me-change-me-change-me
+    access-ttl-seconds: 900
+    refresh-ttl-seconds: 1209600

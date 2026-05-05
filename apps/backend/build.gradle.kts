@@ -13,6 +13,10 @@ dependencies {
     add("implementation", project(":apps:backend:modules:reporting"))
     add("implementation", project(":apps:backend:modules:audit"))
     add("implementation", project(":apps:backend:modules:shared"))
-    add("implementation", "org.springframework.boot:spring-boot-starter-web")
+    add("implementation", "org.springframework.boot:spring-boot-starter-webmvc")
     add("implementation", "org.springframework.boot:spring-boot-starter-actuator")
+    add("testImplementation", "org.springframework.boot:spring-boot-starter-json")
+    add("testImplementation", "org.springframework.boot:spring-boot-starter-test")
+    add("testImplementation", "org.springframework.boot:spring-boot-starter-webmvc-test")
+    add("testImplementation", "org.springframework.security:spring-security-test")
 }
