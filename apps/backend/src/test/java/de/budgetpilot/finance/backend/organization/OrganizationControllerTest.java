@@ -1,10 +1,13 @@
 package de.budgetpilot.finance.backend.organization;
 
 import de.budgetpilot.finance.backend.auth.service.AuthUserStore;
+import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
+import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,6 +43,9 @@ class OrganizationControllerTest extends de.budgetpilot.finance.backend.auth.Abs
 
     @Autowired
     private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private AuthUserRepository authUserRepository;
 
     @BeforeEach
     void setUp() {
@@ -215,32 +221,10 @@ class OrganizationControllerTest extends de.budgetpilot.finance.backend.auth.Abs
                 .andExpect(status().isNoContent());
     }
 
-    private UUID findUserIdByEmail(String email) throws Exception {
-        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "email": "%s",
-                                  "password": "Password123!"
-                                }
-                                """.formatted(email)))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String accessToken = extractJsonValue(loginResponse, "accessToken");
-        String decodedPayload = decodeJwtPayload(accessToken);
-        String idValue = extractJsonValue(decodedPayload, "id");
-        return UUID.fromString(idValue);
-    }
-
-    private String decodeJwtPayload(String token) {
-        String[] parts = token.split("\\.");
-        if (parts.length < 2) {
-            throw new IllegalStateException("JWT format is invalid.");
-        }
-        return new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+    private @NonNull UUID findUserIdByEmail(@NonNull String email) {
+        AuthUserEntity entity = authUserRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new IllegalStateException("User not found in database: " + email));
+        return entity.getId();
     }
 
     private String extractJsonValue(String json, String key) {
