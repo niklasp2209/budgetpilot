@@ -5,12 +5,16 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * @author Niklas Petermeier
  * @since 05.05.2026
  */
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractPostgresIntegrationTest {
+    @Container
     @SuppressWarnings("resource")
     private static final GenericContainer<?> POSTGRES =
             new GenericContainer<>("postgres:16-alpine")
@@ -52,9 +56,5 @@ public abstract class AbstractPostgresIntegrationTest {
                 .load()
                 .migrate();
         migrated = true;
-    }
-
-    static {
-        POSTGRES.start();
     }
 }

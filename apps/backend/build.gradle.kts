@@ -26,5 +26,7 @@ dependencies {
     add("testImplementation", "org.springframework.boot:spring-boot-testcontainers")
     add("testImplementation", "org.springframework.boot:spring-boot-starter-webmvc-test")
     add("testImplementation", "org.springframework.security:spring-security-test")
+    add("testImplementation", platform("org.testcontainers:testcontainers-bom:2.0.5"))
     add("testImplementation", "org.testcontainers:testcontainers")
+    add("testImplementation", "org.testcontainers:testcontainers-junit-jupiter")
 }
