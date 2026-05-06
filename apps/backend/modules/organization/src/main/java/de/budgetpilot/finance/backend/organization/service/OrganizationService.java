@@ -6,7 +6,10 @@ import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
 import de.budgetpilot.finance.backend.organization.dto.CreateOrganizationRequest;
+import de.budgetpilot.finance.backend.organization.dto.UpdateMemberRoleRequest;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationAccessDeniedException;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberNotFoundException;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberOperationException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationSlugAlreadyExistsException;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
@@ -96,6 +99,82 @@ public class OrganizationService {
     }
 
     /**
+     * Updates a member role in an organization.
+     *
+     * @param organizationId organization identifier
+     * @param targetUserId target member user identifier
+     * @param request role update request
+     * @param authenticatedEmail authenticated requester email
+     */
+    @Transactional
+    public void updateMemberRole(
+            @NonNull UUID organizationId,
+            @NonNull UUID targetUserId,
+            @NonNull UpdateMemberRoleRequest request,
+            @NonNull String authenticatedEmail
+    ) {
+        AuthUserEntity requester = findUserByEmail(authenticatedEmail);
+        OrganizationMembershipEntity requesterMembership = membershipOrForbidden(organizationId, requester.getId());
+        OrganizationMembershipEntity targetMembership = organizationMembershipRepository
+                .findByIdOrganizationIdAndIdUserId(organizationId, targetUserId)
+                .orElseThrow(() -> new OrganizationMemberNotFoundException("Member not found."));
+
+        MembershipRole requesterRole = requesterMembership.getRole();
+        MembershipRole targetRole = targetMembership.getRole();
+        MembershipRole newRole = request.role();
+
+        ensureCanManageMembers(requesterRole);
+        if (newRole == MembershipRole.OWNER) {
+            throw new OrganizationMemberOperationException("Cannot assign OWNER role.");
+        }
+        if (targetRole == MembershipRole.OWNER) {
+            throw new OrganizationMemberOperationException("Cannot change role of OWNER.");
+        }
+        if (requester.getId().equals(targetUserId)) {
+            throw new OrganizationMemberOperationException("Cannot change own role.");
+        }
+        if (requesterRole == MembershipRole.ADMIN && (newRole == MembershipRole.ADMIN)) {
+            throw new OrganizationAccessDeniedException("Organization access denied.");
+        }
+
+        targetMembership.setRole(newRole);
+        organizationMembershipRepository.save(targetMembership);
+    }
+
+    /**
+     * Removes a member from an organization.
+     *
+     * @param organizationId organization identifier
+     * @param targetUserId target member user identifier
+     * @param authenticatedEmail authenticated requester email
+     */
+    @Transactional
+    public void removeMember(
+            @NonNull UUID organizationId,
+            @NonNull UUID targetUserId,
+            @NonNull String authenticatedEmail
+    ) {
+        AuthUserEntity requester = findUserByEmail(authenticatedEmail);
+        OrganizationMembershipEntity requesterMembership = membershipOrForbidden(organizationId, requester.getId());
+        OrganizationMembershipEntity targetMembership = organizationMembershipRepository
+                .findByIdOrganizationIdAndIdUserId(organizationId, targetUserId)
+                .orElseThrow(() -> new OrganizationMemberNotFoundException("Member not found."));
+
+        MembershipRole requesterRole = requesterMembership.getRole();
+        MembershipRole targetRole = targetMembership.getRole();
+
+        ensureCanManageMembers(requesterRole);
+        if (targetRole == MembershipRole.OWNER) {
+            throw new OrganizationMemberOperationException("Cannot remove OWNER.");
+        }
+        if (requesterRole == MembershipRole.ADMIN && targetRole == MembershipRole.ADMIN) {
+            throw new OrganizationAccessDeniedException("Organization access denied.");
+        }
+
+        organizationMembershipRepository.delete(targetMembership);
+    }
+
+    /**
      * Resolves a user by normalized email.
      *
      * @param email raw email value
@@ -117,6 +196,17 @@ public class OrganizationService {
                 .findByIdOrganizationIdAndIdUserId(organizationId, userId)
                 .isPresent();
         if (!isMember) {
+            throw new OrganizationAccessDeniedException("Organization access denied.");
+        }
+    }
+
+    private @NonNull OrganizationMembershipEntity membershipOrForbidden(@NonNull UUID organizationId, @NonNull UUID userId) {
+        return organizationMembershipRepository.findByIdOrganizationIdAndIdUserId(organizationId, userId)
+                .orElseThrow(() -> new OrganizationAccessDeniedException("Organization access denied."));
+    }
+
+    private void ensureCanManageMembers(@NonNull MembershipRole requesterRole) {
+        if (requesterRole != MembershipRole.OWNER && requesterRole != MembershipRole.ADMIN) {
             throw new OrganizationAccessDeniedException("Organization access denied.");
         }
     }

@@ -2,6 +2,8 @@ package de.budgetpilot.finance.backend.organization.controller;
 
 import de.budgetpilot.finance.backend.auth.controller.ErrorResponse;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationAccessDeniedException;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberNotFoundException;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberOperationException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationSlugAlreadyExistsException;
 import org.jspecify.annotations.NonNull;
@@ -50,5 +52,17 @@ public class OrganizationExceptionHandler {
     ResponseEntity<ErrorResponse> handleForbidden(@NonNull OrganizationAccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse("ORGANIZATION_FORBIDDEN", exception.getMessage()));
+    }
+
+    @ExceptionHandler(OrganizationMemberNotFoundException.class)
+    ResponseEntity<ErrorResponse> handleMemberNotFound(@NonNull OrganizationMemberNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("ORGANIZATION_MEMBER_NOT_FOUND", exception.getMessage()));
+    }
+
+    @ExceptionHandler(OrganizationMemberOperationException.class)
+    ResponseEntity<ErrorResponse> handleMemberOperation(@NonNull OrganizationMemberOperationException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("ORGANIZATION_MEMBER_INVALID", exception.getMessage()));
     }
 }

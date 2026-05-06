@@ -3,6 +3,7 @@ package de.budgetpilot.finance.backend.organization.controller;
 import de.budgetpilot.finance.backend.organization.dto.CreateOrganizationRequest;
 import de.budgetpilot.finance.backend.organization.dto.OrganizationMemberResponse;
 import de.budgetpilot.finance.backend.organization.dto.OrganizationResponse;
+import de.budgetpilot.finance.backend.organization.dto.UpdateMemberRoleRequest;
 import de.budgetpilot.finance.backend.organization.mapper.OrganizationMapper;
 import de.budgetpilot.finance.backend.organization.service.OrganizationService;
 import jakarta.validation.Valid;
@@ -80,6 +81,42 @@ public class OrganizationController {
         return organizationService.getMembers(organizationId, email).stream()
             .map(organizationMapper::toOrganizationMemberResponse)
             .toList();
+    }
+
+    @PatchMapping("/{organizationId}/members/{userId}/role")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    /**
+     * Updates a member role.
+     *
+     * @param organizationId organization identifier
+     * @param userId target member user identifier
+     * @param request role update payload
+     * @param jwt authenticated JWT token
+     */
+    public void updateMemberRole(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID userId,
+            @Valid @RequestBody @NonNull UpdateMemberRoleRequest request,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        organizationService.updateMemberRole(organizationId, userId, request, extractEmail(jwt));
+    }
+
+    @DeleteMapping("/{organizationId}/members/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    /**
+     * Removes a member from an organization.
+     *
+     * @param organizationId organization identifier
+     * @param userId target member user identifier
+     * @param jwt authenticated JWT token
+     */
+    public void removeMember(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID userId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        organizationService.removeMember(organizationId, userId, extractEmail(jwt));
     }
 
     /**

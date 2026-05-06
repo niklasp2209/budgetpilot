@@ -2,6 +2,7 @@ package de.budgetpilot.finance.backend.organization.repository;
 
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipId;
+import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -17,4 +18,6 @@ public interface OrganizationMembershipRepository extends JpaRepository<Organiza
     @NonNull List<OrganizationMembershipEntity> findByIdOrganizationId(@NonNull UUID organizationId);
 
     @NonNull Optional<OrganizationMembershipEntity> findByIdOrganizationIdAndIdUserId(@NonNull UUID organizationId, @NonNull UUID userId);
+
+    long countByIdOrganizationIdAndRole(@NonNull UUID organizationId, @NonNull MembershipRole role);
 }
