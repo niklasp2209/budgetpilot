@@ -19,5 +19,7 @@ public interface OrganizationMembershipRepository extends JpaRepository<Organiza
 
     @NonNull Optional<OrganizationMembershipEntity> findByIdOrganizationIdAndIdUserId(@NonNull UUID organizationId, @NonNull UUID userId);
 
+    @NonNull List<OrganizationMembershipEntity> findByIdUserId(@NonNull UUID userId);
+
     long countByIdOrganizationIdAndRole(@NonNull UUID organizationId, @NonNull MembershipRole role);
 }

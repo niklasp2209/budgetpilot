@@ -15,6 +15,8 @@ dependencies {
     add("implementation", project(":apps:backend:modules:shared"))
     add("implementation", "org.springframework.boot:spring-boot-starter-data-jpa")
     add("implementation", "org.springframework.boot:spring-boot-starter-webmvc")
+    add("implementation", "org.springframework.boot:spring-boot-starter-security")
+    add("implementation", "org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     add("implementation", "org.springframework.boot:spring-boot-starter-actuator")
     add("implementation", "org.flywaydb:flyway-core")
     add("implementation", "org.flywaydb:flyway-database-postgresql")
