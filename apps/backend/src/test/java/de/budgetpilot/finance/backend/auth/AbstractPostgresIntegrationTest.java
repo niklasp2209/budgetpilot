@@ -5,39 +5,19 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.time.Duration;
 
 /**
  * @author Niklas Petermeier
  * @since 05.05.2026
  */
-@Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractPostgresIntegrationTest {
-    @Container
     @SuppressWarnings("resource")
     private static final GenericContainer<?> POSTGRES =
             new GenericContainer<>("postgres:16-alpine")
                     .withExposedPorts(5432)
                     .withEnv("POSTGRES_DB", "budgetpilot_test")
                     .withEnv("POSTGRES_USER", "budgetpilot")
-                    .withEnv("POSTGRES_PASSWORD", "budgetpilot")
-                    .withStartupTimeout(Duration.ofSeconds(120));
-
-    static {
-        POSTGRES.start();
-        String jdbcUrl = "jdbc:postgresql://%s:%d/budgetpilot_test".formatted(
-                POSTGRES.getHost(),
-                POSTGRES.getMappedPort(5432)
-        );
-        Flyway.configure()
-                .dataSource(jdbcUrl, "budgetpilot", "budgetpilot")
-                .locations("classpath:db/migration")
-                .load()
-                .migrate();
-    }
+                    .withEnv("POSTGRES_PASSWORD", "budgetpilot");
 
     static {
         POSTGRES.start();
