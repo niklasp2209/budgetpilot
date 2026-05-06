@@ -23,6 +23,19 @@ public abstract class AbstractPostgresIntegrationTest {
                     .withEnv("POSTGRES_USER", "budgetpilot")
                     .withEnv("POSTGRES_PASSWORD", "budgetpilot");
 
+    static {
+        POSTGRES.start();
+        String jdbcUrl = "jdbc:postgresql://%s:%d/budgetpilot_test".formatted(
+                POSTGRES.getHost(),
+                POSTGRES.getMappedPort(5432)
+        );
+        Flyway.configure()
+                .dataSource(jdbcUrl, "budgetpilot", "budgetpilot")
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+    }
+
     @DynamicPropertySource
     static void configureDatasource(@NonNull DynamicPropertyRegistry registry) {
         registry.add(
@@ -36,25 +49,5 @@ public abstract class AbstractPostgresIntegrationTest {
         registry.add("spring.datasource.password", () -> "budgetpilot");
         registry.add("spring.flyway.enabled", () -> "false");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
-
-        migrateOnce();
-    }
-
-    private static boolean migrated = false;
-
-    private static synchronized void migrateOnce() {
-        if (migrated) {
-            return;
-        }
-        String jdbcUrl = "jdbc:postgresql://%s:%d/budgetpilot_test".formatted(
-                POSTGRES.getHost(),
-                POSTGRES.getMappedPort(5432)
-        );
-        Flyway.configure()
-                .dataSource(jdbcUrl, "budgetpilot", "budgetpilot")
-                .locations("classpath:db/migration")
-                .load()
-                .migrate();
-        migrated = true;
     }
 }
