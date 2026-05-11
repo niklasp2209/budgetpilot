@@ -56,6 +56,12 @@ public class AuthUserStore {
      */
     @Transactional
     public void clear() {
+        jdbcTemplate.execute("DELETE FROM budget_items");
+        jdbcTemplate.execute("DELETE FROM budgets");
+        jdbcTemplate.execute("DELETE FROM transactions");
+        jdbcTemplate.execute("DELETE FROM categories");
+        jdbcTemplate.execute("DELETE FROM accounts");
+        jdbcTemplate.execute("DELETE FROM organization_invitations");
         jdbcTemplate.execute("DELETE FROM organization_memberships");
         jdbcTemplate.execute("DELETE FROM organizations");
         jdbcTemplate.execute("DELETE FROM refresh_tokens");
