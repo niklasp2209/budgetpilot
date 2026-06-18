@@ -6,6 +6,7 @@ import de.budgetpilot.finance.backend.accounting.domain.TransactionEntity;
 import de.budgetpilot.finance.backend.accounting.dto.CreateAccountRequest;
 import de.budgetpilot.finance.backend.accounting.dto.CreateCategoryRequest;
 import de.budgetpilot.finance.backend.accounting.dto.CreateTransactionRequest;
+import de.budgetpilot.finance.backend.accounting.dto.UpdateTransactionRequest;
 import de.budgetpilot.finance.backend.accounting.exception.AccountingConflictException;
 import de.budgetpilot.finance.backend.accounting.exception.AccountingNotFoundException;
 import de.budgetpilot.finance.backend.accounting.repository.AccountRepository;
@@ -168,18 +169,60 @@ public class AccountingService {
         transactionRepository.delete(transaction);
     }
 
+    @Transactional
+    public @NonNull TransactionEntity updateTransaction(
+            @NonNull UUID organizationId,
+            @NonNull UUID transactionId,
+            @NonNull String authenticatedEmail,
+            @NonNull UpdateTransactionRequest request
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
+
+        TransactionEntity transaction = transactionRepository.findById(transactionId)
+                .filter(value -> value.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new AccountingNotFoundException("Transaction not found."));
+
+        AccountEntity account = accountRepository.findById(request.accountId())
+                .filter(value -> value.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new AccountingNotFoundException("Account not found."));
+
+        CategoryEntity category = categoryRepository.findById(request.categoryId())
+                .filter(value -> value.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new AccountingNotFoundException("Category not found."));
+
+        if (request.amountCents() <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero.");
+        }
+
+        transaction.setAccountId(account.getId());
+        transaction.setCategoryId(category.getId());
+        transaction.setAmountCents(request.amountCents());
+        transaction.setCurrency(account.getCurrency());
+        transaction.setBookedAt(request.bookedAt());
+        transaction.setDescription(request.description());
+        return transactionRepository.save(transaction);
+    }
+
     @Transactional(readOnly = true)
     public @NonNull List<TransactionEntity> listTransactions(
             @NonNull UUID organizationId,
             @NonNull String authenticatedEmail,
             @Nullable OffsetDateTime from,
-            @Nullable OffsetDateTime to
+            @Nullable OffsetDateTime to,
+            @Nullable UUID accountId,
+            @Nullable UUID categoryId
     ) {
         organizationAuthorizationService.requirePermission(
                 organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_READ
         );
         OffsetDateTime effectiveFrom = from != null ? from : OffsetDateTime.now().minusDays(30);
         OffsetDateTime effectiveTo = to != null ? to : OffsetDateTime.now().plusDays(1);
-        return transactionRepository.findByOrganizationIdAndBookedAtBetween(organizationId, effectiveFrom, effectiveTo);
+        return transactionRepository.findByOrganizationIdAndBookedAtBetween(organizationId, effectiveFrom, effectiveTo)
+                .stream()
+                .filter(transaction -> accountId == null || transaction.getAccountId().equals(accountId))
+                .filter(transaction -> categoryId == null || transaction.getCategoryId().equals(categoryId))
+                .toList();
     }
 }

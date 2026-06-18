@@ -107,11 +107,27 @@ public class AccountingController {
             @PathVariable @NonNull UUID organizationId,
             @RequestParam(name = "from", required = false) @Nullable OffsetDateTime from,
             @RequestParam(name = "to", required = false) @Nullable OffsetDateTime to,
+            @RequestParam(name = "accountId", required = false) @Nullable UUID accountId,
+            @RequestParam(name = "categoryId", required = false) @Nullable UUID categoryId,
             @AuthenticationPrincipal @NonNull Jwt jwt
     ) {
-        return accountingService.listTransactions(organizationId, extractEmail(jwt), from, to).stream()
+        return accountingService.listTransactions(
+                organizationId, extractEmail(jwt), from, to, accountId, categoryId
+        ).stream()
                 .map(accountingMapper::toTransactionResponse)
                 .toList();
+    }
+
+    @PutMapping("/api/v1/organizations/{organizationId}/transactions/{transactionId}")
+    public @NonNull TransactionResponse updateTransaction(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID transactionId,
+            @Valid @RequestBody @NonNull UpdateTransactionRequest request,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        return accountingMapper.toTransactionResponse(
+                accountingService.updateTransaction(organizationId, transactionId, extractEmail(jwt), request)
+        );
     }
 
     @DeleteMapping("/api/v1/organizations/{organizationId}/transactions/{transactionId}")

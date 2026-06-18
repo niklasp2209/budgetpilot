@@ -40,12 +40,34 @@ export function fetchBudgetSummary(organizationId: string, budgetId: string): Pr
   );
 }
 
-export function fetchCashflow(organizationId: string): Promise<CashflowReport> {
-  return apiRequest<CashflowReport>(`/api/v1/organizations/${organizationId}/reports/cashflow`);
+export function fetchCashflow(
+  organizationId: string,
+  range?: { from: string; to: string }
+): Promise<CashflowReport> {
+  const query = new URLSearchParams();
+  if (range) {
+    query.set("from", range.from);
+    query.set("to", range.to);
+  }
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return apiRequest<CashflowReport>(
+    `/api/v1/organizations/${organizationId}/reports/cashflow${suffix}`
+  );
 }
 
-export function fetchByCategory(organizationId: string): Promise<CategoryAmount[]> {
-  return apiRequest<CategoryAmount[]>(`/api/v1/organizations/${organizationId}/reports/by-category`);
+export function fetchByCategory(
+  organizationId: string,
+  range?: { from: string; to: string }
+): Promise<CategoryAmount[]> {
+  const query = new URLSearchParams();
+  if (range) {
+    query.set("from", range.from);
+    query.set("to", range.to);
+  }
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return apiRequest<CategoryAmount[]>(
+    `/api/v1/organizations/${organizationId}/reports/by-category${suffix}`
+  );
 }
 
 export function fetchBudgetVsActual(

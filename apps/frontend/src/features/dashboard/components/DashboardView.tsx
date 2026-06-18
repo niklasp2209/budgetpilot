@@ -1,28 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@/shared/api/client";
+import { fetchAccounts } from "@/shared/api/accounting";
 import {
   fetchBudgetVsActual,
   fetchBudgets,
   fetchByCategory,
   fetchCashflow
 } from "@/shared/api/budgets";
+import { BarChart } from "@/shared/components/BarChart";
+import { DateRangeFilter } from "@/shared/components/DateRangeFilter";
+import { EmptyState } from "@/shared/components/EmptyState";
 import { formatCents } from "@/shared/lib/format";
+import {
+  defaultCustomFromDate,
+  defaultCustomToDate,
+  formatDateRangeLabel,
+  resolveDateRangeIso,
+  type DateRangePreset
+} from "@/shared/lib/dateRange";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
-import type {
-  BudgetVsActualReport,
-  CashflowReport,
-  CategoryAmount
-} from "@/shared/types/api";
+import type { BudgetVsActualReport, CashflowReport, CategoryAmount } from "@/shared/types/api";
 
 export function DashboardView() {
   const { selectedOrganization } = useOrganization();
   const [cashflow, setCashflow] = useState<CashflowReport | null>(null);
   const [categories, setCategories] = useState<CategoryAmount[]>([]);
   const [budgetVsActual, setBudgetVsActual] = useState<BudgetVsActualReport | null>(null);
+  const [hasAccounts, setHasAccounts] = useState(true);
+  const [hasBudgets, setHasBudgets] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [preset, setPreset] = useState<DateRangePreset>("30d");
+  const [customFrom, setCustomFrom] = useState(defaultCustomFromDate);
+  const [customTo, setCustomTo] = useState(defaultCustomToDate);
+
+  const range = useMemo(
+    () => resolveDateRangeIso(preset, customFrom, customTo),
+    [preset, customFrom, customTo]
+  );
 
   useEffect(() => {
     const organizationId = selectedOrganization?.id;
@@ -37,9 +55,10 @@ export function DashboardView() {
       setIsLoading(true);
       setError(null);
       try {
-        const [cashflowReport, categoryReport, budgets] = await Promise.all([
-          fetchCashflow(orgId),
-          fetchByCategory(orgId),
+        const [accounts, cashflowReport, categoryReport, budgets] = await Promise.all([
+          fetchAccounts(orgId),
+          fetchCashflow(orgId, range),
+          fetchByCategory(orgId, range),
           fetchBudgets(orgId)
         ]);
 
@@ -52,17 +71,15 @@ export function DashboardView() {
         }
 
         if (!cancelled) {
+          setHasAccounts(accounts.length > 0);
+          setHasBudgets(budgets.length > 0);
           setCashflow(cashflowReport);
           setCategories(categoryReport);
           setBudgetVsActual(budgetReport);
         }
       } catch (caught) {
         if (!cancelled) {
-          if (caught instanceof ApiError) {
-            setError(caught.message);
-          } else {
-            setError("Failed to load dashboard.");
-          }
+          setError(caught instanceof ApiError ? caught.message : "Failed to load dashboard.");
         }
       } finally {
         if (!cancelled) {
@@ -76,7 +93,7 @@ export function DashboardView() {
     return () => {
       cancelled = true;
     };
-  }, [selectedOrganization]);
+  }, [selectedOrganization?.id, range.from, range.to]);
 
   if (!selectedOrganization) {
     return null;
@@ -90,76 +107,137 @@ export function DashboardView() {
     return <p className="error">{error}</p>;
   }
 
+  if (!hasAccounts) {
+    return (
+      <EmptyState
+        title="Set up accounting first"
+        description="Create at least one account and record transactions before the dashboard can show reports."
+        href="/accounting"
+        linkLabel="Go to Accounting"
+      />
+    );
+  }
+
+  const periodLabel = formatDateRangeLabel(preset);
+  const hasCashflowData =
+    cashflow != null && (cashflow.incomeCents > 0 || cashflow.expenseCents > 0);
+
   return (
-    <div className="dashboard-grid">
-      <section className="card">
-        <h2>Cashflow (last 30 days)</h2>
-        {cashflow ? (
-          <dl className="metric-list">
-            <div>
-              <dt>Income</dt>
-              <dd className="positive">{formatCents(cashflow.incomeCents)}</dd>
-            </div>
-            <div>
-              <dt>Expenses</dt>
-              <dd className="negative">{formatCents(cashflow.expenseCents)}</dd>
-            </div>
-            <div>
-              <dt>Net</dt>
-              <dd>{formatCents(cashflow.netCents)}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="muted">No cashflow data.</p>
-        )}
-      </section>
+    <div className="stack">
+      <div className="filter-bar">
+        <span className="muted">Period</span>
+        <DateRangeFilter
+          preset={preset}
+          customFrom={customFrom}
+          customTo={customTo}
+          onPresetChange={setPreset}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+        />
+      </div>
 
-      <section className="card">
-        <h2>Expenses by category</h2>
-        {categories.length === 0 ? (
-          <p className="muted">No expenses in this period.</p>
-        ) : (
-          <ul className="data-list">
-            {categories.map((category) => (
-              <li key={category.categoryId}>
-                <span>{category.categoryName}</span>
-                <span>{formatCents(category.amountCents)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="dashboard-grid">
+        <section className="card">
+          <h2>Cashflow ({periodLabel})</h2>
+          {!hasCashflowData ? (
+            <EmptyState
+              title="No transactions in this period"
+              description="Add income or expense transactions in Accounting to see cashflow here."
+              href="/accounting"
+              linkLabel="Add transactions"
+            />
+          ) : (
+            <>
+              <BarChart
+                items={[
+                  { label: "Income", value: cashflow.incomeCents, tone: "positive" },
+                  { label: "Expenses", value: cashflow.expenseCents, tone: "negative" }
+                ]}
+              />
+              <dl className="metric-list">
+                <div>
+                  <dt>Net</dt>
+                  <dd className={cashflow.netCents >= 0 ? "positive" : "negative"}>
+                    {formatCents(cashflow.netCents)}
+                  </dd>
+                </div>
+              </dl>
+            </>
+          )}
+        </section>
 
-      <section className="card card-wide">
-        <h2>Budget vs. actual</h2>
-        {!budgetVsActual || budgetVsActual.items.length === 0 ? (
-          <p className="muted">No budget data for the current month.</p>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Budget</th>
-                <th>Actual</th>
-                <th>Delta</th>
-              </tr>
-            </thead>
-            <tbody>
-              {budgetVsActual.items.map((item) => {
-                const delta = item.budgetCents - item.actualCents;
-                return (
-                  <tr key={item.categoryId}>
-                    <td>{item.categoryName}</td>
-                    <td>{formatCents(item.budgetCents)}</td>
-                    <td>{formatCents(item.actualCents)}</td>
-                    <td className={delta >= 0 ? "positive" : "negative"}>{formatCents(delta)}</td>
+        <section className="card">
+          <h2>Expenses by category ({periodLabel})</h2>
+          {categories.length === 0 ? (
+            <EmptyState
+              title="No expenses in this period"
+              description="Record expense transactions with categories to see a breakdown here."
+              href="/accounting"
+              linkLabel="Go to Accounting"
+            />
+          ) : (
+            <BarChart
+              items={categories.map((category) => ({
+                label: category.categoryName,
+                value: category.amountCents,
+                tone: "negative" as const
+              }))}
+            />
+          )}
+        </section>
+
+        <section className="card card-wide">
+          <h2>Budget vs. actual</h2>
+          {!hasBudgets ? (
+            <EmptyState
+              title="No budgets yet"
+              description="Create a monthly budget to compare planned and actual spending."
+              href="/budgets"
+              linkLabel="Go to Budgets"
+            />
+          ) : !budgetVsActual || budgetVsActual.items.length === 0 ? (
+            <EmptyState
+              title="No budget items for this month"
+              description="Add budget items for the current month to see budget versus actual."
+              href="/budgets"
+              linkLabel="Manage budgets"
+            />
+          ) : (
+            <>
+              <BarChart
+                items={budgetVsActual.items.map((item) => ({
+                  label: item.categoryName,
+                  value: item.actualCents,
+                  tone: item.actualCents > item.budgetCents ? "negative" : "neutral"
+                }))}
+              />
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Budget</th>
+                    <th>Actual</th>
+                    <th>Delta</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {budgetVsActual.items.map((item) => {
+                    const delta = item.budgetCents - item.actualCents;
+                    return (
+                      <tr key={item.categoryId}>
+                        <td>{item.categoryName}</td>
+                        <td>{formatCents(item.budgetCents)}</td>
+                        <td>{formatCents(item.actualCents)}</td>
+                        <td className={delta >= 0 ? "positive" : "negative"}>{formatCents(delta)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

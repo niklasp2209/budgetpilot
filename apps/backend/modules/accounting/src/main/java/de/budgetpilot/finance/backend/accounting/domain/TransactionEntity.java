@@ -30,10 +30,10 @@ public class TransactionEntity {
     @Column(name = "organization_id", nullable = false, updatable = false)
     private UUID organizationId;
 
-    @Column(name = "account_id", nullable = false, updatable = false)
+    @Column(name = "account_id", nullable = false)
     private UUID accountId;
 
-    @Column(name = "category_id", nullable = false, updatable = false)
+    @Column(name = "category_id", nullable = false)
     private UUID categoryId;
 
     @Column(name = "amount_cents", nullable = false)

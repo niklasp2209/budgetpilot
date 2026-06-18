@@ -39,19 +39,39 @@ export function deleteCategory(organizationId: string, categoryId: string): Prom
   });
 }
 
-function transactionListRange(): { from: string; to: string } {
-  const from = new Date();
-  from.setFullYear(from.getFullYear() - 10);
-  const to = new Date();
-  to.setFullYear(to.getFullYear() + 1);
-  return { from: from.toISOString(), to: to.toISOString() };
+function buildTransactionQuery(filters: {
+  from?: string;
+  to?: string;
+  accountId?: string;
+  categoryId?: string;
+}): string {
+  const query = new URLSearchParams();
+  if (filters.from) {
+    query.set("from", filters.from);
+  }
+  if (filters.to) {
+    query.set("to", filters.to);
+  }
+  if (filters.accountId) {
+    query.set("accountId", filters.accountId);
+  }
+  if (filters.categoryId) {
+    query.set("categoryId", filters.categoryId);
+  }
+  return query.size > 0 ? `?${query.toString()}` : "";
 }
 
-export function fetchTransactions(organizationId: string): Promise<Transaction[]> {
-  const { from, to } = transactionListRange();
-  const query = new URLSearchParams({ from, to });
+export function fetchTransactions(
+  organizationId: string,
+  filters: {
+    from?: string;
+    to?: string;
+    accountId?: string;
+    categoryId?: string;
+  } = {}
+): Promise<Transaction[]> {
   return apiRequest<Transaction[]>(
-    `/api/v1/organizations/${organizationId}/transactions?${query.toString()}`
+    `/api/v1/organizations/${organizationId}/transactions${buildTransactionQuery(filters)}`
   );
 }
 
@@ -76,4 +96,24 @@ export function deleteTransaction(organizationId: string, transactionId: string)
   return apiRequest<void>(`/api/v1/organizations/${organizationId}/transactions/${transactionId}`, {
     method: "DELETE"
   });
+}
+
+export function updateTransaction(
+  organizationId: string,
+  transactionId: string,
+  payload: {
+    accountId: string;
+    categoryId: string;
+    amountCents: number;
+    bookedAt: string;
+    description?: string;
+  }
+): Promise<Transaction> {
+  return apiRequest<Transaction>(
+    `/api/v1/organizations/${organizationId}/transactions/${transactionId}`,
+    {
+      method: "PUT",
+      body: payload
+    }
+  );
 }

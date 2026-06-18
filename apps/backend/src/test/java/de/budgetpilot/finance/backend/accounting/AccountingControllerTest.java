@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -141,6 +142,49 @@ class AccountingControllerTest extends AbstractPostgresIntegrationTest {
         mockMvc.perform(delete("/api/v1/organizations/{organizationId}/accounts/{accountId}", organizationId, accountId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void memberCanUpdateTransaction() throws Exception {
+        String accessToken = registerAndGetAccessToken("update-acc@example.com");
+        String organizationId = createOrganization(accessToken, "Update Org", "update-org");
+
+        String accountId = createAccount(accessToken, organizationId);
+        String categoryId = createCategory(accessToken, organizationId);
+
+        String transactionResponse = mockMvc.perform(post("/api/v1/organizations/{organizationId}/transactions", organizationId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "accountId": "%s",
+                                  "categoryId": "%s",
+                                  "amountCents": 1000,
+                                  "currency": "EUR",
+                                  "description": "Old"
+                                }
+                                """.formatted(accountId, categoryId)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String transactionId = extractJsonValue(transactionResponse, "id");
+
+        mockMvc.perform(put("/api/v1/organizations/{organizationId}/transactions/{transactionId}", organizationId, transactionId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "accountId": "%s",
+                                  "categoryId": "%s",
+                                  "amountCents": 2500,
+                                  "bookedAt": "%s",
+                                  "description": "Updated"
+                                }
+                                """.formatted(accountId, categoryId, OffsetDateTime.now())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amountCents").value(2500))
+                .andExpect(jsonPath("$.description").value("Updated"));
     }
 
     @Test
