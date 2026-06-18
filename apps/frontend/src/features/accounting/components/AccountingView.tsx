@@ -25,6 +25,7 @@ import {
 } from "@/shared/lib/dateRange";
 import { formatCents } from "@/shared/lib/format";
 import { hasPermission } from "@/shared/lib/permissions";
+import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type { Account, Category, CategoryType, Transaction } from "@/shared/types/api";
 
@@ -123,14 +124,71 @@ export function AccountingView() {
   }
 
   useEffect(() => {
-    void loadBaseData();
+    const organizationId = selectedOrganization?.id;
+    if (!organizationId) {
+      return;
+    }
+
+    return runInEffectAsync(async (isCancelled) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [loadedAccounts, loadedCategories] = await Promise.all([
+          fetchAccounts(organizationId),
+          fetchCategories(organizationId)
+        ]);
+        if (isCancelled()) {
+          return;
+        }
+        setAccounts(loadedAccounts);
+        setCategories(loadedCategories);
+        if (loadedAccounts.length > 0) {
+          setTransactionAccountId((current) => current || loadedAccounts[0].id);
+        }
+        if (loadedCategories.length > 0) {
+          setTransactionCategoryId((current) => current || loadedCategories[0].id);
+        }
+      } catch (caught) {
+        if (!isCancelled()) {
+          setError(caught instanceof ApiError ? caught.message : "Failed to load accounting data.");
+        }
+      } finally {
+        if (!isCancelled()) {
+          setIsLoading(false);
+        }
+      }
+    });
   }, [selectedOrganization?.id]);
 
   useEffect(() => {
-    if (!selectedOrganization || isLoading) {
+    const organizationId = selectedOrganization?.id;
+    if (!organizationId || isLoading) {
       return;
     }
-    void loadTransactions();
+
+    return runInEffectAsync(async (isCancelled) => {
+      setIsLoadingTransactions(true);
+      setError(null);
+      try {
+        const loadedTransactions = await fetchTransactions(organizationId, {
+          from: filterRange.from,
+          to: filterRange.to,
+          accountId: filterAccountId || undefined,
+          categoryId: filterCategoryId || undefined
+        });
+        if (!isCancelled()) {
+          setTransactions(loadedTransactions);
+        }
+      } catch (caught) {
+        if (!isCancelled()) {
+          setError(caught instanceof ApiError ? caught.message : "Failed to load transactions.");
+        }
+      } finally {
+        if (!isCancelled()) {
+          setIsLoadingTransactions(false);
+        }
+      }
+    });
   }, [
     selectedOrganization?.id,
     filterRange.from,

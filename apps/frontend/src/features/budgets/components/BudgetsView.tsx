@@ -11,6 +11,7 @@ import {
 import { fetchCategories } from "@/shared/api/accounting";
 import { formatCents } from "@/shared/lib/format";
 import { hasPermission } from "@/shared/lib/permissions";
+import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type { Budget, BudgetSummary, Category } from "@/shared/types/api";
 
@@ -74,11 +75,72 @@ export function BudgetsView() {
   }
 
   useEffect(() => {
-    void loadBudgets();
+    const organizationId = selectedOrganization?.id;
+    if (!organizationId) {
+      return;
+    }
+
+    return runInEffectAsync(async (isCancelled) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [loadedBudgets, loadedCategories] = await Promise.all([
+          fetchBudgets(organizationId),
+          fetchCategories(organizationId)
+        ]);
+        if (isCancelled()) {
+          return;
+        }
+        setBudgets(loadedBudgets);
+        setCategories(loadedCategories.filter((category) => category.type !== "TRANSFER"));
+
+        setSelectedBudgetId((current) =>
+          loadedBudgets.find((budget) => budget.id === current)?.id
+          ?? loadedBudgets[0]?.id
+          ?? ""
+        );
+
+        if (loadedCategories.length > 0) {
+          setItemCategoryId((current) => current || loadedCategories[0].id);
+        }
+      } catch (caught) {
+        if (!isCancelled()) {
+          setError(caught instanceof ApiError ? caught.message : "Failed to load budgets.");
+        }
+      } finally {
+        if (!isCancelled()) {
+          setIsLoading(false);
+        }
+      }
+    });
   }, [selectedOrganization?.id]);
 
   useEffect(() => {
-    void loadSummary(selectedBudgetId);
+    const organizationId = selectedOrganization?.id;
+    if (!organizationId) {
+      return;
+    }
+
+    if (!selectedBudgetId) {
+      return runInEffectAsync(async (isCancelled) => {
+        if (!isCancelled()) {
+          setSummary(null);
+        }
+      });
+    }
+
+    return runInEffectAsync(async (isCancelled) => {
+      try {
+        const loadedSummary = await fetchBudgetSummary(organizationId, selectedBudgetId);
+        if (!isCancelled()) {
+          setSummary(loadedSummary);
+        }
+      } catch (caught) {
+        if (!isCancelled()) {
+          setError(caught instanceof ApiError ? caught.message : "Failed to load budget summary.");
+        }
+      }
+    });
   }, [selectedOrganization?.id, selectedBudgetId]);
 
   async function handleCreateBudget(event: FormEvent<HTMLFormElement>) {

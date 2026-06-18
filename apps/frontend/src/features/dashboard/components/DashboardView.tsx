@@ -20,6 +20,7 @@ import {
   resolveDateRangeIso,
   type DateRangePreset
 } from "@/shared/lib/dateRange";
+import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type { BudgetVsActualReport, CashflowReport, CategoryAmount } from "@/shared/types/api";
 
@@ -49,9 +50,8 @@ export function DashboardView() {
     }
 
     const orgId = organizationId;
-    let cancelled = false;
 
-    async function loadDashboard() {
+    return runInEffectAsync(async (isCancelled) => {
       setIsLoading(true);
       setError(null);
       try {
@@ -70,7 +70,7 @@ export function DashboardView() {
           budgetReport = await fetchBudgetVsActual(orgId, matchingBudget.id);
         }
 
-        if (!cancelled) {
+        if (!isCancelled()) {
           setHasAccounts(accounts.length > 0);
           setHasBudgets(budgets.length > 0);
           setCashflow(cashflowReport);
@@ -78,22 +78,16 @@ export function DashboardView() {
           setBudgetVsActual(budgetReport);
         }
       } catch (caught) {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setError(caught instanceof ApiError ? caught.message : "Failed to load dashboard.");
         }
       } finally {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setIsLoading(false);
         }
       }
-    }
-
-    void loadDashboard();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedOrganization?.id, range.from, range.to]);
+    });
+  }, [selectedOrganization?.id, range]);
 
   if (!selectedOrganization) {
     return null;

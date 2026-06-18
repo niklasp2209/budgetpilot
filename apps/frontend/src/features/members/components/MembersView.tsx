@@ -17,6 +17,7 @@ import {
   updatePermissionGroup
 } from "@/shared/api/permissionGroups";
 import { hasPermission } from "@/shared/lib/permissions";
+import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type {
   MembershipRole,
@@ -91,7 +92,38 @@ export function MembersView() {
   }
 
   useEffect(() => {
-    void loadData();
+    const organizationId = selectedOrganization?.id;
+    if (!organizationId) {
+      return;
+    }
+
+    return runInEffectAsync(async (isCancelled) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [loadedMembers, me, loadedGroups] = await Promise.all([
+          fetchMembers(organizationId),
+          fetchMe(),
+          canManageGroups
+            ? fetchPermissionGroups(organizationId)
+            : Promise.resolve([] as PermissionGroup[])
+        ]);
+        if (isCancelled()) {
+          return;
+        }
+        setMembers(loadedMembers);
+        setCurrentUserId(me.id);
+        setGroups(loadedGroups);
+      } catch (caught) {
+        if (!isCancelled()) {
+          setError(caught instanceof ApiError ? caught.message : "Failed to load members.");
+        }
+      } finally {
+        if (!isCancelled()) {
+          setIsLoading(false);
+        }
+      }
+    });
   }, [selectedOrganization?.id, canManageGroups]);
 
   async function handleAddMember(event: FormEvent<HTMLFormElement>) {
