@@ -5,18 +5,16 @@ import de.budgetpilot.finance.backend.accounting.domain.CategoryType;
 import de.budgetpilot.finance.backend.accounting.domain.TransactionEntity;
 import de.budgetpilot.finance.backend.accounting.repository.CategoryRepository;
 import de.budgetpilot.finance.backend.accounting.repository.TransactionRepository;
-import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
-import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
 import de.budgetpilot.finance.backend.budget.domain.BudgetEntity;
 import de.budgetpilot.finance.backend.budget.domain.BudgetItemEntity;
 import de.budgetpilot.finance.backend.budget.repository.BudgetItemRepository;
 import de.budgetpilot.finance.backend.budget.repository.BudgetRepository;
-import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import de.budgetpilot.finance.backend.reporting.dto.BudgetVsActualItemResponse;
 import de.budgetpilot.finance.backend.reporting.dto.BudgetVsActualReportResponse;
 import de.budgetpilot.finance.backend.reporting.dto.CashflowReportResponse;
 import de.budgetpilot.finance.backend.reporting.dto.CategoryAmountResponse;
-import de.budgetpilot.finance.backend.reporting.exception.ReportingAccessDeniedException;
 import de.budgetpilot.finance.backend.reporting.exception.ReportingNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -40,8 +38,7 @@ public class ReportingService {
     private final CategoryRepository categoryRepository;
     private final BudgetRepository budgetRepository;
     private final BudgetItemRepository budgetItemRepository;
-    private final AuthUserRepository authUserRepository;
-    private final OrganizationMembershipRepository organizationMembershipRepository;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
 
     /**
      * Returns income, expense, and net totals for a date range.
@@ -59,7 +56,9 @@ public class ReportingService {
             @Nullable OffsetDateTime from,
             @Nullable OffsetDateTime to
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.REPORTING_READ
+        );
         OffsetDateTime effectiveFrom = resolveFrom(from);
         OffsetDateTime effectiveTo = resolveTo(to);
 
@@ -98,7 +97,9 @@ public class ReportingService {
             @Nullable OffsetDateTime from,
             @Nullable OffsetDateTime to
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.REPORTING_READ
+        );
         OffsetDateTime effectiveFrom = resolveFrom(from);
         OffsetDateTime effectiveTo = resolveTo(to);
 
@@ -149,7 +150,9 @@ public class ReportingService {
             @NonNull UUID budgetId,
             @NonNull String authenticatedEmail
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.REPORTING_READ
+        );
         BudgetEntity budget = budgetRepository.findById(budgetId)
                 .filter(value -> value.getOrganizationId().equals(organizationId))
                 .orElseThrow(() -> new ReportingNotFoundException("Budget not found."));
@@ -230,21 +233,5 @@ public class ReportingService {
 
     private @NonNull OffsetDateTime resolveTo(@Nullable OffsetDateTime to) {
         return to != null ? to : OffsetDateTime.now().plusDays(1);
-    }
-
-    private @NonNull AuthUserEntity requireMember(@NonNull UUID organizationId, @NonNull String email) {
-        AuthUserEntity user = authUserRepository.findByEmail(normalizeEmail(email))
-                .orElseThrow(() -> new ReportingAccessDeniedException("Authenticated user was not found."));
-        boolean isMember = organizationMembershipRepository
-                .findByIdOrganizationIdAndIdUserId(organizationId, user.getId())
-                .isPresent();
-        if (!isMember) {
-            throw new ReportingAccessDeniedException("Organization access denied.");
-        }
-        return user;
-    }
-
-    private @NonNull String normalizeEmail(@NonNull String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

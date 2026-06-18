@@ -2,6 +2,9 @@ package de.budgetpilot.finance.backend.organization.service;
 
 import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
 import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAccessContext;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
@@ -33,6 +36,7 @@ public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationMembershipRepository organizationMembershipRepository;
     private final AuthUserRepository authUserRepository;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
 
     /**
      * Creates a new organization and owner membership.
@@ -75,8 +79,9 @@ public class OrganizationService {
             @NonNull UUID organizationId,
             @NonNull String authenticatedEmail
     ) {
-        AuthUserEntity requester = findUserByEmail(authenticatedEmail);
-        ensureMembership(organizationId, requester.getId());
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ORGANIZATION_READ
+        );
         return organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
     }
@@ -93,8 +98,9 @@ public class OrganizationService {
             @NonNull UUID organizationId,
             @NonNull String authenticatedEmail
     ) {
-        AuthUserEntity requester = findUserByEmail(authenticatedEmail);
-        ensureMembership(organizationId, requester.getId());
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ORGANIZATION_READ
+        );
         return organizationMembershipRepository.findByIdOrganizationId(organizationId);
     }
 
@@ -113,27 +119,27 @@ public class OrganizationService {
             @NonNull UpdateMemberRoleRequest request,
             @NonNull String authenticatedEmail
     ) {
-        AuthUserEntity requester = findUserByEmail(authenticatedEmail);
-        OrganizationMembershipEntity requesterMembership = membershipOrForbidden(organizationId, requester.getId());
+        OrganizationAccessContext requesterContext = organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.MEMBERS_MANAGE
+        );
         OrganizationMembershipEntity targetMembership = organizationMembershipRepository
                 .findByIdOrganizationIdAndIdUserId(organizationId, targetUserId)
                 .orElseThrow(() -> new OrganizationMemberNotFoundException("Member not found."));
 
-        MembershipRole requesterRole = requesterMembership.getRole();
+        MembershipRole requesterRole = requesterContext.role();
         MembershipRole targetRole = targetMembership.getRole();
         MembershipRole newRole = request.role();
 
-        ensureCanManageMembers(requesterRole);
         if (newRole == MembershipRole.OWNER) {
             throw new OrganizationMemberOperationException("Cannot assign OWNER role.");
         }
         if (targetRole == MembershipRole.OWNER) {
             throw new OrganizationMemberOperationException("Cannot change role of OWNER.");
         }
-        if (requester.getId().equals(targetUserId)) {
+        if (requesterContext.userId().equals(targetUserId)) {
             throw new OrganizationMemberOperationException("Cannot change own role.");
         }
-        if (requesterRole == MembershipRole.ADMIN && (newRole == MembershipRole.ADMIN)) {
+        if (requesterRole == MembershipRole.ADMIN && newRole == MembershipRole.ADMIN) {
             throw new OrganizationAccessDeniedException("Organization access denied.");
         }
 
@@ -154,16 +160,16 @@ public class OrganizationService {
             @NonNull UUID targetUserId,
             @NonNull String authenticatedEmail
     ) {
-        AuthUserEntity requester = findUserByEmail(authenticatedEmail);
-        OrganizationMembershipEntity requesterMembership = membershipOrForbidden(organizationId, requester.getId());
+        OrganizationAccessContext requesterContext = organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.MEMBERS_MANAGE
+        );
         OrganizationMembershipEntity targetMembership = organizationMembershipRepository
                 .findByIdOrganizationIdAndIdUserId(organizationId, targetUserId)
                 .orElseThrow(() -> new OrganizationMemberNotFoundException("Member not found."));
 
-        MembershipRole requesterRole = requesterMembership.getRole();
+        MembershipRole requesterRole = requesterContext.role();
         MembershipRole targetRole = targetMembership.getRole();
 
-        ensureCanManageMembers(requesterRole);
         if (targetRole == MembershipRole.OWNER) {
             throw new OrganizationMemberOperationException("Cannot remove OWNER.");
         }
@@ -183,32 +189,6 @@ public class OrganizationService {
     private @NonNull AuthUserEntity findUserByEmail(@NonNull String email) {
         return authUserRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
                 .orElseThrow(() -> new OrganizationAccessDeniedException("Authenticated user was not found."));
-    }
-
-    /**
-     * Verifies that a user is a member of the organization.
-     *
-     * @param organizationId organization identifier
-     * @param userId user identifier
-     */
-    private void ensureMembership(@NonNull UUID organizationId, @NonNull UUID userId) {
-        boolean isMember = organizationMembershipRepository
-                .findByIdOrganizationIdAndIdUserId(organizationId, userId)
-                .isPresent();
-        if (!isMember) {
-            throw new OrganizationAccessDeniedException("Organization access denied.");
-        }
-    }
-
-    private @NonNull OrganizationMembershipEntity membershipOrForbidden(@NonNull UUID organizationId, @NonNull UUID userId) {
-        return organizationMembershipRepository.findByIdOrganizationIdAndIdUserId(organizationId, userId)
-                .orElseThrow(() -> new OrganizationAccessDeniedException("Organization access denied."));
-    }
-
-    private void ensureCanManageMembers(@NonNull MembershipRole requesterRole) {
-        if (requesterRole != MembershipRole.OWNER && requesterRole != MembershipRole.ADMIN) {
-            throw new OrganizationAccessDeniedException("Organization access denied.");
-        }
     }
 
     /**

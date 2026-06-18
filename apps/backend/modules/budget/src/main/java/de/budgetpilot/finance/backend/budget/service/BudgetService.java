@@ -5,17 +5,15 @@ import de.budgetpilot.finance.backend.accounting.domain.CategoryType;
 import de.budgetpilot.finance.backend.accounting.domain.TransactionEntity;
 import de.budgetpilot.finance.backend.accounting.repository.CategoryRepository;
 import de.budgetpilot.finance.backend.accounting.repository.TransactionRepository;
-import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
-import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
 import de.budgetpilot.finance.backend.budget.domain.BudgetEntity;
 import de.budgetpilot.finance.backend.budget.domain.BudgetItemEntity;
 import de.budgetpilot.finance.backend.budget.dto.CreateBudgetRequest;
 import de.budgetpilot.finance.backend.budget.dto.UpsertBudgetItemRequest;
-import de.budgetpilot.finance.backend.budget.exception.BudgetAccessDeniedException;
 import de.budgetpilot.finance.backend.budget.exception.BudgetNotFoundException;
 import de.budgetpilot.finance.backend.budget.repository.BudgetItemRepository;
 import de.budgetpilot.finance.backend.budget.repository.BudgetRepository;
-import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -35,8 +33,7 @@ import java.util.*;
 public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final BudgetItemRepository budgetItemRepository;
-    private final AuthUserRepository authUserRepository;
-    private final OrganizationMembershipRepository organizationMembershipRepository;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
 
@@ -54,7 +51,9 @@ public class BudgetService {
             @NonNull String authenticatedEmail,
             @NonNull CreateBudgetRequest request
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_WRITE
+        );
         LocalDate periodStart = request.periodStart();
         if (periodStart.getDayOfMonth() != 1) {
             throw new IllegalArgumentException("periodStart must be the first day of month.");
@@ -72,7 +71,9 @@ public class BudgetService {
      */
     @Transactional(readOnly = true)
     public @NonNull List<BudgetEntity> listBudgets(@NonNull UUID organizationId, @NonNull String authenticatedEmail) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_READ
+        );
         return budgetRepository.findByOrganizationId(organizationId);
     }
 
@@ -92,7 +93,9 @@ public class BudgetService {
             @NonNull String authenticatedEmail,
             @NonNull UpsertBudgetItemRequest request
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_WRITE
+        );
         BudgetEntity budget = budgetRepository.findById(budgetId)
                 .filter(value -> value.getOrganizationId().equals(organizationId))
                 .orElseThrow(() -> new BudgetNotFoundException("Budget not found."));
@@ -125,7 +128,9 @@ public class BudgetService {
      */
     @Transactional(readOnly = true)
     public long totalBudgetCents(@NonNull UUID organizationId, @NonNull UUID budgetId, @NonNull String authenticatedEmail) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_READ
+        );
         BudgetEntity budget = budgetRepository.findById(budgetId)
                 .filter(value -> value.getOrganizationId().equals(organizationId))
                 .orElseThrow(() -> new BudgetNotFoundException("Budget not found."));
@@ -148,7 +153,9 @@ public class BudgetService {
      */
     @Transactional(readOnly = true)
     public long totalExpenseCents(@NonNull UUID organizationId, @NonNull UUID budgetId, @NonNull String authenticatedEmail) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_READ
+        );
         BudgetEntity budget = getBudgetOrThrow(organizationId, budgetId);
 
         LocalDate start = budget.getPeriodStart();
@@ -195,7 +202,9 @@ public class BudgetService {
             @NonNull UUID budgetId,
             @NonNull String authenticatedEmail
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_READ
+        );
         return getBudgetOrThrow(organizationId, budgetId);
     }
 
@@ -204,21 +213,4 @@ public class BudgetService {
                 .filter(value -> value.getOrganizationId().equals(organizationId))
                 .orElseThrow(() -> new BudgetNotFoundException("Budget not found."));
     }
-
-    private @NonNull AuthUserEntity requireMember(@NonNull UUID organizationId, @NonNull String email) {
-        AuthUserEntity user = authUserRepository.findByEmail(normalizeEmail(email))
-                .orElseThrow(() -> new BudgetAccessDeniedException("Authenticated user was not found."));
-        boolean isMember = organizationMembershipRepository
-                .findByIdOrganizationIdAndIdUserId(organizationId, user.getId())
-                .isPresent();
-        if (!isMember) {
-            throw new BudgetAccessDeniedException("Organization access denied.");
-        }
-        return user;
-    }
-
-    private @NonNull String normalizeEmail(@NonNull String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
-    }
 }
-

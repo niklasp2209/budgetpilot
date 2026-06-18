@@ -8,6 +8,8 @@ import de.budgetpilot.finance.backend.invite.dto.CreateInviteRequest;
 import de.budgetpilot.finance.backend.invite.exception.InviteAccessDeniedException;
 import de.budgetpilot.finance.backend.invite.exception.InviteInvalidException;
 import de.budgetpilot.finance.backend.invite.repository.OrganizationInvitationRepository;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
@@ -33,6 +35,7 @@ public class InviteService {
     private final OrganizationMembershipRepository membershipRepository;
     private final OrganizationRepository organizationRepository;
     private final AuthUserRepository authUserRepository;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
 
     /**
      * Creates a new invitation for an organization.
@@ -49,11 +52,9 @@ public class InviteService {
             @NonNull CreateInviteRequest request
     ) {
         AuthUserEntity requester = findUserByEmail(requesterEmail);
-        OrganizationMembershipEntity requesterMembership = findMembership(organizationId, requester.getId());
-        MembershipRole requesterRole = requesterMembership.getRole();
-        if (requesterRole != MembershipRole.OWNER && requesterRole != MembershipRole.ADMIN) {
-            throw new InviteAccessDeniedException("Only OWNER or ADMIN can create invites.");
-        }
+        organizationAuthorizationService.requirePermission(
+                organizationId, requesterEmail, OrganizationPermission.INVITES_MANAGE
+        );
         if (request.role() == MembershipRole.OWNER) {
             throw new InviteAccessDeniedException("Invites cannot assign OWNER role.");
         }
@@ -86,12 +87,9 @@ public class InviteService {
             @NonNull UUID organizationId,
             @NonNull String requesterEmail
     ) {
-        AuthUserEntity requester = findUserByEmail(requesterEmail);
-        OrganizationMembershipEntity requesterMembership = findMembership(organizationId, requester.getId());
-        MembershipRole requesterRole = requesterMembership.getRole();
-        if (requesterRole != MembershipRole.OWNER && requesterRole != MembershipRole.ADMIN) {
-            throw new InviteAccessDeniedException("Only OWNER or ADMIN can list invites.");
-        }
+        organizationAuthorizationService.requirePermission(
+                organizationId, requesterEmail, OrganizationPermission.INVITES_MANAGE
+        );
         return invitationRepository.findByOrganizationId(organizationId).stream()
                 .filter(entity -> entity.getStatus() == InvitationStatus.PENDING)
                 .toList();
@@ -159,18 +157,6 @@ public class InviteService {
             throw new InviteInvalidException("Invite is expired.");
         }
         return invitation;
-    }
-
-    /**
-     * Resolves organization membership for a user.
-     *
-     * @param organizationId organization identifier
-     * @param userId user identifier
-     * @return matching membership entity
-     */
-    private @NonNull OrganizationMembershipEntity findMembership(@NonNull UUID organizationId, @NonNull UUID userId) {
-        return membershipRepository.findByIdOrganizationIdAndIdUserId(organizationId, userId)
-                .orElseThrow(() -> new InviteAccessDeniedException("Organization access denied."));
     }
 
     /**

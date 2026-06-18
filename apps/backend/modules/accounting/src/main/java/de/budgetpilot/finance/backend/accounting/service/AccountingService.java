@@ -6,14 +6,12 @@ import de.budgetpilot.finance.backend.accounting.domain.TransactionEntity;
 import de.budgetpilot.finance.backend.accounting.dto.CreateAccountRequest;
 import de.budgetpilot.finance.backend.accounting.dto.CreateCategoryRequest;
 import de.budgetpilot.finance.backend.accounting.dto.CreateTransactionRequest;
-import de.budgetpilot.finance.backend.accounting.exception.AccountingAccessDeniedException;
 import de.budgetpilot.finance.backend.accounting.exception.AccountingNotFoundException;
 import de.budgetpilot.finance.backend.accounting.repository.AccountRepository;
 import de.budgetpilot.finance.backend.accounting.repository.CategoryRepository;
 import de.budgetpilot.finance.backend.accounting.repository.TransactionRepository;
-import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
-import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
-import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -35,8 +33,7 @@ public class AccountingService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
-    private final AuthUserRepository authUserRepository;
-    private final OrganizationMembershipRepository organizationMembershipRepository;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
 
     @Transactional
     public @NonNull AccountEntity createAccount(
@@ -44,7 +41,9 @@ public class AccountingService {
             @NonNull String authenticatedEmail,
             @NonNull CreateAccountRequest request
     ) {
-        AuthUserEntity user = requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
         String name = request.name().trim();
         String currency = request.currency().trim().toUpperCase(Locale.ROOT);
         return accountRepository.save(AccountEntity.createNew(organizationId, name, currency));
@@ -52,7 +51,9 @@ public class AccountingService {
 
     @Transactional(readOnly = true)
     public @NonNull List<AccountEntity> listAccounts(@NonNull UUID organizationId, @NonNull String authenticatedEmail) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_READ
+        );
         return accountRepository.findByOrganizationId(organizationId);
     }
 
@@ -62,13 +63,17 @@ public class AccountingService {
             @NonNull String authenticatedEmail,
             @NonNull CreateCategoryRequest request
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
         return categoryRepository.save(CategoryEntity.createNew(organizationId, request.name().trim(), request.type()));
     }
 
     @Transactional(readOnly = true)
     public @NonNull List<CategoryEntity> listCategories(@NonNull UUID organizationId, @NonNull String authenticatedEmail) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_READ
+        );
         return categoryRepository.findByOrganizationId(organizationId);
     }
 
@@ -78,7 +83,9 @@ public class AccountingService {
             @NonNull String authenticatedEmail,
             @NonNull CreateTransactionRequest request
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
 
         AccountEntity account = accountRepository.findById(request.accountId())
                 .filter(value -> value.getOrganizationId().equals(organizationId))
@@ -111,26 +118,11 @@ public class AccountingService {
             @Nullable OffsetDateTime from,
             @Nullable OffsetDateTime to
     ) {
-        requireMember(organizationId, authenticatedEmail);
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_READ
+        );
         OffsetDateTime effectiveFrom = from != null ? from : OffsetDateTime.now().minusDays(30);
         OffsetDateTime effectiveTo = to != null ? to : OffsetDateTime.now().plusDays(1);
         return transactionRepository.findByOrganizationIdAndBookedAtBetween(organizationId, effectiveFrom, effectiveTo);
     }
-
-    private @NonNull AuthUserEntity requireMember(@NonNull UUID organizationId, @NonNull String email) {
-        AuthUserEntity user = authUserRepository.findByEmail(normalizeEmail(email))
-                .orElseThrow(() -> new AccountingAccessDeniedException("Authenticated user was not found."));
-        boolean isMember = organizationMembershipRepository
-                .findByIdOrganizationIdAndIdUserId(organizationId, user.getId())
-                .isPresent();
-        if (!isMember) {
-            throw new AccountingAccessDeniedException("Organization access denied.");
-        }
-        return user;
-    }
-
-    private @NonNull String normalizeEmail(@NonNull String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
-    }
 }
-
