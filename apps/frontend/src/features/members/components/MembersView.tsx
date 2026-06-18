@@ -18,6 +18,7 @@ import {
 } from "@/shared/api/permissionGroups";
 import { hasPermission } from "@/shared/lib/permissions";
 import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type {
   MembershipRole,
@@ -44,6 +45,7 @@ function toggleGroupId(current: string[], groupId: string): string[] {
 
 export function MembersView() {
   const { selectedOrganization } = useOrganization();
+  const { t } = useTranslation();
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [groups, setGroups] = useState<PermissionGroup[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export function MembersView() {
       setCurrentUserId(me.id);
       setGroups(loadedGroups);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load members.");
+      setError(caught instanceof ApiError ? caught.message : t("members.loadFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +118,7 @@ export function MembersView() {
         setGroups(loadedGroups);
       } catch (caught) {
         if (!isCancelled()) {
-          setError(caught instanceof ApiError ? caught.message : "Failed to load members.");
+          setError(caught instanceof ApiError ? caught.message : t("members.loadFailed"));
         }
       } finally {
         if (!isCancelled()) {
@@ -143,7 +145,7 @@ export function MembersView() {
       setMemberRole("MEMBER");
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to add member.");
+      setError(caught instanceof ApiError ? caught.message : t("members.addMemberFailed"));
     }
   }
 
@@ -156,7 +158,7 @@ export function MembersView() {
       await updateMemberRole(selectedOrganization.id, member.userId, role);
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to update role.");
+      setError(caught instanceof ApiError ? caught.message : t("members.updateRoleFailed"));
     }
   }
 
@@ -169,7 +171,7 @@ export function MembersView() {
       await removeMember(selectedOrganization.id, userId);
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to remove member.");
+      setError(caught instanceof ApiError ? caught.message : t("members.removeMemberFailed"));
     }
   }
 
@@ -182,7 +184,7 @@ export function MembersView() {
       await assignMemberPermissionGroups(selectedOrganization.id, member.userId, groupIds);
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to update permission groups.");
+      setError(caught instanceof ApiError ? caught.message : t("members.updateGroupsFailed"));
     }
   }
 
@@ -192,7 +194,7 @@ export function MembersView() {
       return;
     }
     if (groupPermissions.length === 0) {
-      setError("Select at least one permission for the group.");
+      setError(t("members.selectPermission"));
       return;
     }
     setError(null);
@@ -202,7 +204,7 @@ export function MembersView() {
       setGroupPermissions([]);
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to create permission group.");
+      setError(caught instanceof ApiError ? caught.message : t("members.createGroupFailed"));
     }
   }
 
@@ -218,7 +220,7 @@ export function MembersView() {
       return;
     }
     if (editGroupPermissions.length === 0) {
-      setError("Select at least one permission for the group.");
+      setError(t("members.selectPermission"));
       return;
     }
     setError(null);
@@ -232,7 +234,7 @@ export function MembersView() {
       setEditingGroupId(null);
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to update permission group.");
+      setError(caught instanceof ApiError ? caught.message : t("members.updateGroupFailed"));
     }
   }
 
@@ -248,7 +250,7 @@ export function MembersView() {
       }
       await loadData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete permission group.");
+      setError(caught instanceof ApiError ? caught.message : t("members.deleteGroupFailed"));
     }
   }
 
@@ -257,7 +259,7 @@ export function MembersView() {
   }
 
   if (isLoading) {
-    return <p className="muted">Loading members...</p>;
+    return <p className="muted">{t("members.loading")}</p>;
   }
 
   return (
@@ -266,22 +268,20 @@ export function MembersView() {
 
       {canManageMembers ? (
         <section className="card card-wide">
-          <h2>Add member</h2>
-          <p className="muted">
-            Create a new login or add an existing user by email. No invitation email is sent.
-          </p>
+          <h2>{t("members.addMember")}</h2>
+          <p className="muted">{t("members.addMemberDescription")}</p>
           <form className="stack-form" onSubmit={handleAddMember}>
             <div className="inline-form">
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={t("common.email")}
                 value={memberEmail}
                 onChange={(event) => setMemberEmail(event.target.value)}
                 required
               />
               <input
                 type="password"
-                placeholder="Password (new users only)"
+                placeholder={t("members.passwordNewUsers")}
                 value={memberPassword}
                 onChange={(event) => setMemberPassword(event.target.value)}
                 minLength={8}
@@ -298,24 +298,24 @@ export function MembersView() {
               </select>
             </div>
             <button type="submit" className="inline-button">
-              Add member
+              {t("members.addMemberButton")}
             </button>
           </form>
         </section>
       ) : null}
 
       <section className="card card-wide">
-        <h2>Members</h2>
+        <h2>{t("members.members")}</h2>
         {members.length === 0 ? (
-          <p className="muted">No members yet.</p>
+          <p className="muted">{t("members.noMembers")}</p>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                {canManageGroups ? <th>Permission groups</th> : null}
+                <th>{t("common.email")}</th>
+                <th>{t("members.role")}</th>
+                <th>{t("common.status")}</th>
+                {canManageGroups ? <th>{t("members.permissionGroups")}</th> : null}
                 {canManageMembers ? <th /> : null}
               </tr>
             </thead>
@@ -348,7 +348,7 @@ export function MembersView() {
                     {canManageGroups ? (
                       <td>
                         {groups.length === 0 ? (
-                          <span className="muted">No groups</span>
+                          <span className="muted">{t("members.noGroups")}</span>
                         ) : (
                           <div className="checkbox-group">
                             {groups.map((group) => (
@@ -379,7 +379,7 @@ export function MembersView() {
                               className="danger-button"
                               onClick={() => void handleRemoveMember(member.userId)}
                             >
-                              Remove
+                              {t("common.remove")}
                             </button>
                           </div>
                         ) : null}
@@ -395,13 +395,11 @@ export function MembersView() {
 
       {canManageGroups ? (
         <section className="card card-wide">
-          <h2>Permission groups</h2>
-          <p className="muted">
-            Custom groups add permissions on top of each member&apos;s role.
-          </p>
+          <h2>{t("members.permissionGroupsTitle")}</h2>
+          <p className="muted">{t("members.permissionGroupsDescription")}</p>
 
           {groups.length === 0 ? (
-            <p className="muted">No permission groups yet.</p>
+            <p className="muted">{t("members.noPermissionGroups")}</p>
           ) : (
             <ul className="group-list">
               {groups.map((group) => (
@@ -430,14 +428,14 @@ export function MembersView() {
                       </div>
                       <div className="row-actions">
                         <button type="submit" className="inline-button">
-                          Save
+                          {t("common.save")}
                         </button>
                         <button
                           type="button"
                           className="secondary-button"
                           onClick={() => setEditingGroupId(null)}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </form>
@@ -455,14 +453,14 @@ export function MembersView() {
                           className="secondary-button"
                           onClick={() => startEditingGroup(group)}
                         >
-                          Edit
+                          {t("common.edit")}
                         </button>
                         <button
                           type="button"
                           className="danger-button"
                           onClick={() => void handleDeleteGroup(group.id)}
                         >
-                          Delete
+                          {t("common.delete")}
                         </button>
                       </div>
                     </>
@@ -473,10 +471,10 @@ export function MembersView() {
           )}
 
           <form className="stack-form" onSubmit={handleCreateGroup}>
-            <h3>Create group</h3>
+            <h3>{t("members.createGroup")}</h3>
             <input
               type="text"
-              placeholder="Group name"
+              placeholder={t("members.groupName")}
               value={groupName}
               onChange={(event) => setGroupName(event.target.value)}
               required
@@ -496,7 +494,7 @@ export function MembersView() {
               ))}
             </div>
             <button type="submit" className="inline-button">
-              Create group
+              {t("members.createGroup")}
             </button>
           </form>
         </section>

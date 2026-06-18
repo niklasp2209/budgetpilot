@@ -4,9 +4,11 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ApiError } from "@/shared/api/client";
 import { useAuth } from "@/features/auth/context/AuthProvider";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
 export function LoginForm() {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function LoginForm() {
       if (caught instanceof ApiError) {
         setError(caught.message);
       } else {
-        setError("Login failed.");
+        setError(t("auth.loginFailed"));
       }
     } finally {
       setIsSubmitting(false);
@@ -31,11 +33,11 @@ export function LoginForm() {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
-      <h1>Login</h1>
-      <p className="muted">Sign in to your BudgetPilot account.</p>
+      <h1>{t("auth.loginTitle")}</h1>
+      <p className="muted">{t("auth.loginSubtitle")}</p>
       {error ? <p className="error">{error}</p> : null}
       <label>
-        Email
+        {t("common.email")}
         <input
           type="email"
           value={email}
@@ -45,7 +47,7 @@ export function LoginForm() {
         />
       </label>
       <label>
-        Password
+        {t("common.password")}
         <input
           type="password"
           value={password}
@@ -55,10 +57,10 @@ export function LoginForm() {
         />
       </label>
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        {isSubmitting ? t("auth.signingIn") : t("auth.signIn")}
       </button>
       <p className="muted">
-        No account yet? <Link href="/register">Register</Link>
+        {t("auth.noAccount")} <Link href="/register">{t("auth.registerLink")}</Link>
       </p>
     </form>
   );

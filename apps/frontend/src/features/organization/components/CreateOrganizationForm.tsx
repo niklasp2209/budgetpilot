@@ -4,9 +4,11 @@ import { FormEvent, useState } from "react";
 import { ApiError } from "@/shared/api/client";
 import { slugify } from "@/shared/lib/format";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
 export function CreateOrganizationForm() {
   const { createFirstOrganization } = useOrganization();
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -23,7 +25,7 @@ export function CreateOrganizationForm() {
       if (caught instanceof ApiError) {
         setError(caught.message);
       } else {
-        setError("Failed to create organization.");
+        setError(t("org.createFailed"));
       }
     } finally {
       setIsSubmitting(false);
@@ -32,11 +34,11 @@ export function CreateOrganizationForm() {
 
   return (
     <form className="card setup-card" onSubmit={handleSubmit}>
-      <h2>Create your first organization</h2>
-      <p className="muted">You need an organization before the dashboard can load data.</p>
+      <h2>{t("org.createFirstTitle")}</h2>
+      <p className="muted">{t("org.createFirstDescription")}</p>
       {error ? <p className="error">{error}</p> : null}
       <label>
-        Name
+        {t("common.name")}
         <input
           type="text"
           value={name}
@@ -51,7 +53,7 @@ export function CreateOrganizationForm() {
         />
       </label>
       <label>
-        Slug
+        {t("common.slug")}
         <input
           type="text"
           value={slug}
@@ -63,7 +65,7 @@ export function CreateOrganizationForm() {
         />
       </label>
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Creating..." : "Create organization"}
+        {isSubmitting ? t("org.creating") : t("org.createOrganization")}
       </button>
     </form>
   );

@@ -4,9 +4,11 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ApiError } from "@/shared/api/client";
 import { useAuth } from "@/features/auth/context/AuthProvider";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
 export function RegisterForm() {
   const { register } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function RegisterForm() {
       if (caught instanceof ApiError) {
         setError(caught.message);
       } else {
-        setError("Registration failed.");
+        setError(t("auth.registrationFailed"));
       }
     } finally {
       setIsSubmitting(false);
@@ -31,11 +33,11 @@ export function RegisterForm() {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
-      <h1>Register</h1>
-      <p className="muted">Create your BudgetPilot account.</p>
+      <h1>{t("auth.registerTitle")}</h1>
+      <p className="muted">{t("auth.registerSubtitle")}</p>
       {error ? <p className="error">{error}</p> : null}
       <label>
-        Email
+        {t("common.email")}
         <input
           type="email"
           value={email}
@@ -45,7 +47,7 @@ export function RegisterForm() {
         />
       </label>
       <label>
-        Password
+        {t("common.password")}
         <input
           type="password"
           value={password}
@@ -56,10 +58,10 @@ export function RegisterForm() {
         />
       </label>
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Creating account..." : "Create account"}
+        {isSubmitting ? t("auth.creatingAccount") : t("auth.createAccount")}
       </button>
       <p className="muted">
-        Already registered? <Link href="/login">Login</Link>
+        {t("auth.alreadyRegistered")} <Link href="/login">{t("auth.loginLink")}</Link>
       </p>
     </form>
   );

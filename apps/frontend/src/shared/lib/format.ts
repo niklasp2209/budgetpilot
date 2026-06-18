@@ -1,5 +1,8 @@
-export function formatCents(cents: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("de-DE", {
+import type { Locale } from "@/shared/i18n/types";
+import { localeToIntl } from "@/shared/i18n/config";
+
+export function formatCents(cents: number, currency = "EUR", locale: Locale = "en"): string {
+  return new Intl.NumberFormat(localeToIntl(locale), {
     style: "currency",
     currency
   }).format(cents / 100);

@@ -1,9 +1,10 @@
 import { LoginForm } from "@/features/auth/components/LoginForm";
+import { PageShell } from "@/shared/components/PageShell";
 
 export default function LoginPage() {
   return (
-    <div className="page-center">
+    <PageShell>
       <LoginForm />
-    </div>
+    </PageShell>
   );
 }

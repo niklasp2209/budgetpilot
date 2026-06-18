@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/accounting", label: "Accounting" },
-  { href: "/budgets", label: "Budgets" },
-  { href: "/members", label: "Members" }
+  { href: "/dashboard", key: "nav.dashboard" },
+  { href: "/accounting", key: "nav.accounting" },
+  { href: "/budgets", key: "nav.budgets" },
+  { href: "/members", key: "nav.members" }
 ] as const;
 
 export function AppNav() {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   return (
     <nav className="app-nav">
@@ -23,7 +25,7 @@ export function AppNav() {
             href={item.href}
             className={isActive ? "app-nav-link active" : "app-nav-link"}
           >
-            {item.label}
+            {t(item.key)}
           </Link>
         );
       })}

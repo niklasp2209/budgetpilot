@@ -1,9 +1,11 @@
 "use client";
 
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
 export function OrganizationPicker() {
   const { organizations, selectedOrganization, selectOrganization } = useOrganization();
+  const { t } = useTranslation();
 
   if (organizations.length <= 1) {
     return selectedOrganization ? (
@@ -13,7 +15,7 @@ export function OrganizationPicker() {
 
   return (
     <label className="org-picker">
-      Organization
+      {t("common.organization")}
       <select
         value={selectedOrganization?.id ?? ""}
         onChange={(event) => selectOrganization(event.target.value)}

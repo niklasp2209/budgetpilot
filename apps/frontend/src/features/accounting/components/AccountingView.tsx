@@ -19,6 +19,7 @@ import { EmptyState } from "@/shared/components/EmptyState";
 import {
   defaultCustomFromDate,
   defaultCustomToDate,
+  formatDateTime,
   resolveDateRangeIso,
   toLocalDateTimeInput,
   type DateRangePreset
@@ -26,6 +27,7 @@ import {
 import { formatCents } from "@/shared/lib/format";
 import { hasPermission } from "@/shared/lib/permissions";
 import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type { Account, Category, CategoryType, Transaction } from "@/shared/types/api";
 
@@ -38,6 +40,7 @@ function toBookedAtIso(localDateTime: string): string | undefined {
 
 export function AccountingView() {
   const { selectedOrganization } = useOrganization();
+  const { t, locale } = useTranslation();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -96,7 +99,7 @@ export function AccountingView() {
         setTransactionCategoryId(loadedCategories[0].id);
       }
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load accounting data.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.loadFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +120,7 @@ export function AccountingView() {
       });
       setTransactions(loadedTransactions);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load transactions.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.loadTransactionsFailed"));
     } finally {
       setIsLoadingTransactions(false);
     }
@@ -150,7 +153,7 @@ export function AccountingView() {
         }
       } catch (caught) {
         if (!isCancelled()) {
-          setError(caught instanceof ApiError ? caught.message : "Failed to load accounting data.");
+          setError(caught instanceof ApiError ? caught.message : t("accounting.loadFailed"));
         }
       } finally {
         if (!isCancelled()) {
@@ -181,7 +184,7 @@ export function AccountingView() {
         }
       } catch (caught) {
         if (!isCancelled()) {
-          setError(caught instanceof ApiError ? caught.message : "Failed to load transactions.");
+          setError(caught instanceof ApiError ? caught.message : t("accounting.loadTransactionsFailed"));
         }
       } finally {
         if (!isCancelled()) {
@@ -218,7 +221,7 @@ export function AccountingView() {
       setAccountName("");
       await loadBaseData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to create account.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.createAccountFailed"));
     }
   }
 
@@ -232,7 +235,7 @@ export function AccountingView() {
       await loadBaseData();
       await loadTransactions();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete account.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.deleteAccountFailed"));
     }
   }
 
@@ -247,7 +250,7 @@ export function AccountingView() {
       setCategoryName("");
       await loadBaseData();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to create category.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.createCategoryFailed"));
     }
   }
 
@@ -261,7 +264,7 @@ export function AccountingView() {
       await loadBaseData();
       await loadTransactions();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete category.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.deleteCategoryFailed"));
     }
   }
 
@@ -276,12 +279,12 @@ export function AccountingView() {
     }
     const amountCents = Math.round(Number.parseFloat(transactionAmount) * 100);
     if (!Number.isFinite(amountCents) || amountCents <= 0) {
-      setError("Amount must be greater than zero.");
+      setError(t("accounting.amountPositive"));
       return;
     }
     const bookedAt = toBookedAtIso(transactionBookedAt);
     if (transactionBookedAt.trim() && !bookedAt) {
-      setError("Invalid date and time.");
+      setError(t("accounting.invalidDateTime"));
       return;
     }
     setError(null);
@@ -299,7 +302,7 @@ export function AccountingView() {
       setTransactionDescription("");
       await loadTransactions();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to create transaction.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.createTransactionFailed"));
     }
   }
 
@@ -310,12 +313,12 @@ export function AccountingView() {
     }
     const amountCents = Math.round(Number.parseFloat(editAmount) * 100);
     if (!Number.isFinite(amountCents) || amountCents <= 0) {
-      setError("Amount must be greater than zero.");
+      setError(t("accounting.amountPositive"));
       return;
     }
     const bookedAt = toBookedAtIso(editBookedAt);
     if (!bookedAt) {
-      setError("Invalid date and time.");
+      setError(t("accounting.invalidDateTime"));
       return;
     }
     setError(null);
@@ -330,7 +333,7 @@ export function AccountingView() {
       setEditingTransactionId(null);
       await loadTransactions();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to update transaction.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.updateTransactionFailed"));
     }
   }
 
@@ -346,7 +349,7 @@ export function AccountingView() {
       }
       await loadTransactions();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to delete transaction.");
+      setError(caught instanceof ApiError ? caught.message : t("accounting.deleteTransactionFailed"));
     }
   }
 
@@ -355,7 +358,7 @@ export function AccountingView() {
   }
 
   if (isLoading) {
-    return <p className="muted">Loading accounting...</p>;
+    return <p className="muted">{t("accounting.loading")}</p>;
   }
 
   const canAddTransactions = accounts.length > 0 && categories.length > 0;
@@ -365,11 +368,11 @@ export function AccountingView() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="card card-wide">
-        <h2>Accounts</h2>
+        <h2>{t("accounting.accounts")}</h2>
         {accounts.length === 0 ? (
           <EmptyState
-            title="Create your first account"
-            description="Accounts represent bank or cash wallets. Add one before recording transactions."
+            title={t("accounting.createAccountTitle")}
+            description={t("accounting.createAccountDescription")}
           />
         ) : (
           <ul className="data-list">
@@ -384,7 +387,7 @@ export function AccountingView() {
                       className="danger-button"
                       onClick={() => void handleDeleteAccount(account.id)}
                     >
-                      Delete
+                      {t("common.delete")}
                     </button>
                   ) : null}
                 </div>
@@ -396,32 +399,32 @@ export function AccountingView() {
           <form className="inline-form" onSubmit={handleCreateAccount}>
             <input
               type="text"
-              placeholder="Account name"
+              placeholder={t("accounting.accountName")}
               value={accountName}
               onChange={(event) => setAccountName(event.target.value)}
               required
             />
             <input
               type="text"
-              placeholder="EUR"
+              placeholder={t("common.currencyEur")}
               value={accountCurrency}
               onChange={(event) => setAccountCurrency(event.target.value)}
               required
               maxLength={3}
             />
             <button type="submit" className="inline-button">
-              Add account
+              {t("accounting.addAccount")}
             </button>
           </form>
         ) : null}
       </section>
 
       <section className="card card-wide">
-        <h2>Categories</h2>
+        <h2>{t("accounting.categories")}</h2>
         {categories.length === 0 ? (
           <EmptyState
-            title="Create categories next"
-            description="Categories classify income and expenses. Add at least one before creating transactions."
+            title={t("accounting.createCategoryTitle")}
+            description={t("accounting.createCategoryDescription")}
           />
         ) : (
           <ul className="data-list">
@@ -436,7 +439,7 @@ export function AccountingView() {
                       className="danger-button"
                       onClick={() => void handleDeleteCategory(category.id)}
                     >
-                      Delete
+                      {t("common.delete")}
                     </button>
                   ) : null}
                 </div>
@@ -448,7 +451,7 @@ export function AccountingView() {
           <form className="inline-form" onSubmit={handleCreateCategory}>
             <input
               type="text"
-              placeholder="Category name"
+              placeholder={t("accounting.categoryName")}
               value={categoryName}
               onChange={(event) => setCategoryName(event.target.value)}
               required
@@ -457,19 +460,19 @@ export function AccountingView() {
               value={categoryType}
               onChange={(event) => setCategoryType(event.target.value as CategoryType)}
             >
-              <option value="EXPENSE">EXPENSE</option>
-              <option value="INCOME">INCOME</option>
-              <option value="TRANSFER">TRANSFER</option>
+              <option value="EXPENSE">{t("accounting.categoryExpense")}</option>
+              <option value="INCOME">{t("accounting.categoryIncome")}</option>
+              <option value="TRANSFER">{t("accounting.categoryTransfer")}</option>
             </select>
             <button type="submit" className="inline-button">
-              Add category
+              {t("accounting.addCategory")}
             </button>
           </form>
         ) : null}
       </section>
 
       <section className="card card-wide">
-        <h2>Transactions</h2>
+        <h2>{t("accounting.transactions")}</h2>
 
         <div className="filter-bar">
           <DateRangeFilter
@@ -481,7 +484,7 @@ export function AccountingView() {
             onCustomToChange={setFilterCustomTo}
           />
           <select value={filterAccountId} onChange={(event) => setFilterAccountId(event.target.value)}>
-            <option value="">All accounts</option>
+            <option value="">{t("common.allAccounts")}</option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
@@ -489,7 +492,7 @@ export function AccountingView() {
             ))}
           </select>
           <select value={filterCategoryId} onChange={(event) => setFilterCategoryId(event.target.value)}>
-            <option value="">All categories</option>
+            <option value="">{t("common.allCategories")}</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -499,23 +502,23 @@ export function AccountingView() {
         </div>
 
         {isLoadingTransactions ? (
-          <p className="muted">Loading transactions...</p>
+          <p className="muted">{t("accounting.loadingTransactions")}</p>
         ) : transactions.length === 0 ? (
           <EmptyState
-            title="No transactions found"
+            title={t("accounting.noTransactionsTitle")}
             description={
               canAddTransactions
-                ? "No transactions match your filters, or none have been recorded yet."
-                : "Create an account and at least one category before adding transactions."
+                ? t("accounting.noTransactionsFiltered")
+                : t("accounting.noTransactionsSetup")
             }
           />
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Date</th>
+                <th>{t("common.description")}</th>
+                <th>{t("common.amount")}</th>
+                <th>{t("common.date")}</th>
                 {canWrite ? <th /> : null}
               </tr>
             </thead>
@@ -565,20 +568,20 @@ export function AccountingView() {
                         </div>
                         <input
                           type="text"
-                          placeholder="Description"
+                          placeholder={t("common.description")}
                           value={editDescription}
                           onChange={(event) => setEditDescription(event.target.value)}
                         />
                         <div className="row-actions">
                           <button type="submit" className="inline-button">
-                            Save
+                            {t("common.save")}
                           </button>
                           <button
                             type="button"
                             className="secondary-button"
                             onClick={() => setEditingTransactionId(null)}
                           >
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                         </div>
                       </form>
@@ -587,8 +590,8 @@ export function AccountingView() {
                 ) : (
                   <tr key={transaction.id}>
                     <td>{transaction.description ?? "-"}</td>
-                    <td>{formatCents(transaction.amountCents, transaction.currency)}</td>
-                    <td>{new Date(transaction.bookedAt).toLocaleString("de-DE")}</td>
+                    <td>{formatCents(transaction.amountCents, transaction.currency, locale)}</td>
+                    <td>{formatDateTime(transaction.bookedAt, locale)}</td>
                     {canWrite ? (
                       <td>
                         <div className="row-actions">
@@ -597,14 +600,14 @@ export function AccountingView() {
                             className="secondary-button"
                             onClick={() => startEditing(transaction)}
                           >
-                            Edit
+                            {t("common.edit")}
                           </button>
                           <button
                             type="button"
                             className="danger-button"
                             onClick={() => void handleDeleteTransaction(transaction.id)}
                           >
-                            Delete
+                            {t("common.delete")}
                           </button>
                         </div>
                       </td>
@@ -646,14 +649,14 @@ export function AccountingView() {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  placeholder="Amount"
+                  placeholder={t("common.amount")}
                   value={transactionAmount}
                   onChange={(event) => setTransactionAmount(event.target.value)}
                   required
                 />
               </div>
               <label>
-                Date and time (optional)
+                {t("accounting.dateTimeOptional")}
                 <input
                   type="datetime-local"
                   value={transactionBookedAt}
@@ -662,22 +665,22 @@ export function AccountingView() {
               </label>
               <input
                 type="text"
-                placeholder="Description"
+                placeholder={t("common.description")}
                 value={transactionDescription}
                 onChange={(event) => setTransactionDescription(event.target.value)}
               />
               <button type="submit" className="inline-button">
-                Add transaction
+                {t("accounting.addTransaction")}
               </button>
             </form>
           ) : (
             <EmptyState
-              title="Transactions not available yet"
-              description="Add at least one account and one category before recording transactions."
+              title={t("accounting.transactionsUnavailableTitle")}
+              description={t("accounting.transactionsUnavailableDescription")}
             />
           )
         ) : (
-          <p className="muted">Read-only access for your role.</p>
+          <p className="muted">{t("common.readOnly")}</p>
         )}
       </section>
     </div>

@@ -1,6 +1,7 @@
 const ACCESS_TOKEN_KEY = "budgetpilot.accessToken";
 const REFRESH_TOKEN_KEY = "budgetpilot.refreshToken";
 const ORGANIZATION_ID_KEY = "budgetpilot.organizationId";
+const LOCALE_KEY = "budgetpilot.locale";
 
 export type StoredTokens = {
   accessToken: string;
@@ -42,4 +43,15 @@ export function setStoredOrganizationId(organizationId: string): void {
 
 export function clearStoredOrganizationId(): void {
   window.localStorage.removeItem(ORGANIZATION_ID_KEY);
+}
+
+export function getStoredLocale(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.localStorage.getItem(LOCALE_KEY);
+}
+
+export function setStoredLocale(locale: string): void {
+  window.localStorage.setItem(LOCALE_KEY, locale);
 }

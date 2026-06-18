@@ -21,11 +21,13 @@ import {
   type DateRangePreset
 } from "@/shared/lib/dateRange";
 import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type { BudgetVsActualReport, CashflowReport, CategoryAmount } from "@/shared/types/api";
 
 export function DashboardView() {
   const { selectedOrganization } = useOrganization();
+  const { t, locale } = useTranslation();
   const [cashflow, setCashflow] = useState<CashflowReport | null>(null);
   const [categories, setCategories] = useState<CategoryAmount[]>([]);
   const [budgetVsActual, setBudgetVsActual] = useState<BudgetVsActualReport | null>(null);
@@ -79,7 +81,7 @@ export function DashboardView() {
         }
       } catch (caught) {
         if (!isCancelled()) {
-          setError(caught instanceof ApiError ? caught.message : "Failed to load dashboard.");
+          setError(caught instanceof ApiError ? caught.message : t("dashboard.loadFailed"));
         }
       } finally {
         if (!isCancelled()) {
@@ -94,7 +96,7 @@ export function DashboardView() {
   }
 
   if (isLoading) {
-    return <p className="muted">Loading dashboard...</p>;
+    return <p className="muted">{t("dashboard.loading")}</p>;
   }
 
   if (error) {
@@ -104,22 +106,22 @@ export function DashboardView() {
   if (!hasAccounts) {
     return (
       <EmptyState
-        title="Set up accounting first"
-        description="Create at least one account and record transactions before the dashboard can show reports."
+        title={t("dashboard.setupAccountingTitle")}
+        description={t("dashboard.setupAccountingDescription")}
         href="/accounting"
-        linkLabel="Go to Accounting"
+        linkLabel={t("dashboard.goToAccounting")}
       />
     );
   }
 
-  const periodLabel = formatDateRangeLabel(preset);
+  const periodLabel = formatDateRangeLabel(preset, locale);
   const hasCashflowData =
     cashflow != null && (cashflow.incomeCents > 0 || cashflow.expenseCents > 0);
 
   return (
     <div className="stack">
       <div className="filter-bar">
-        <span className="muted">Period</span>
+        <span className="muted">{t("common.period")}</span>
         <DateRangeFilter
           preset={preset}
           customFrom={customFrom}
@@ -132,27 +134,27 @@ export function DashboardView() {
 
       <div className="dashboard-grid">
         <section className="card">
-          <h2>Cashflow ({periodLabel})</h2>
+          <h2>{t("dashboard.cashflow", { period: periodLabel })}</h2>
           {!hasCashflowData ? (
             <EmptyState
-              title="No transactions in this period"
-              description="Add income or expense transactions in Accounting to see cashflow here."
+              title={t("dashboard.noTransactionsTitle")}
+              description={t("dashboard.noTransactionsDescription")}
               href="/accounting"
-              linkLabel="Add transactions"
+              linkLabel={t("dashboard.addTransactions")}
             />
           ) : (
             <>
               <BarChart
                 items={[
-                  { label: "Income", value: cashflow.incomeCents, tone: "positive" },
-                  { label: "Expenses", value: cashflow.expenseCents, tone: "negative" }
+                  { label: t("dashboard.income"), value: cashflow.incomeCents, tone: "positive" },
+                  { label: t("dashboard.expenses"), value: cashflow.expenseCents, tone: "negative" }
                 ]}
               />
               <dl className="metric-list">
                 <div>
-                  <dt>Net</dt>
+                  <dt>{t("dashboard.net")}</dt>
                   <dd className={cashflow.netCents >= 0 ? "positive" : "negative"}>
-                    {formatCents(cashflow.netCents)}
+                    {formatCents(cashflow.netCents, "EUR", locale)}
                   </dd>
                 </div>
               </dl>
@@ -161,13 +163,13 @@ export function DashboardView() {
         </section>
 
         <section className="card">
-          <h2>Expenses by category ({periodLabel})</h2>
+          <h2>{t("dashboard.expensesByCategory", { period: periodLabel })}</h2>
           {categories.length === 0 ? (
             <EmptyState
-              title="No expenses in this period"
-              description="Record expense transactions with categories to see a breakdown here."
+              title={t("dashboard.noExpensesTitle")}
+              description={t("dashboard.noExpensesDescription")}
               href="/accounting"
-              linkLabel="Go to Accounting"
+              linkLabel={t("dashboard.goToAccounting")}
             />
           ) : (
             <BarChart
@@ -181,20 +183,20 @@ export function DashboardView() {
         </section>
 
         <section className="card card-wide">
-          <h2>Budget vs. actual</h2>
+          <h2>{t("dashboard.budgetVsActual")}</h2>
           {!hasBudgets ? (
             <EmptyState
-              title="No budgets yet"
-              description="Create a monthly budget to compare planned and actual spending."
+              title={t("dashboard.noBudgetsTitle")}
+              description={t("dashboard.noBudgetsDescription")}
               href="/budgets"
-              linkLabel="Go to Budgets"
+              linkLabel={t("dashboard.goToBudgets")}
             />
           ) : !budgetVsActual || budgetVsActual.items.length === 0 ? (
             <EmptyState
-              title="No budget items for this month"
-              description="Add budget items for the current month to see budget versus actual."
+              title={t("dashboard.noBudgetItemsTitle")}
+              description={t("dashboard.noBudgetItemsDescription")}
               href="/budgets"
-              linkLabel="Manage budgets"
+              linkLabel={t("dashboard.manageBudgets")}
             />
           ) : (
             <>
@@ -208,10 +210,10 @@ export function DashboardView() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Category</th>
-                    <th>Budget</th>
-                    <th>Actual</th>
-                    <th>Delta</th>
+                    <th>{t("dashboard.tableCategory")}</th>
+                    <th>{t("dashboard.tableBudget")}</th>
+                    <th>{t("dashboard.tableActual")}</th>
+                    <th>{t("dashboard.tableDelta")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -220,9 +222,11 @@ export function DashboardView() {
                     return (
                       <tr key={item.categoryId}>
                         <td>{item.categoryName}</td>
-                        <td>{formatCents(item.budgetCents)}</td>
-                        <td>{formatCents(item.actualCents)}</td>
-                        <td className={delta >= 0 ? "positive" : "negative"}>{formatCents(delta)}</td>
+                        <td>{formatCents(item.budgetCents, "EUR", locale)}</td>
+                        <td>{formatCents(item.actualCents, "EUR", locale)}</td>
+                        <td className={delta >= 0 ? "positive" : "negative"}>
+                          {formatCents(delta, "EUR", locale)}
+                        </td>
                       </tr>
                     );
                   })}

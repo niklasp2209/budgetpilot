@@ -12,11 +12,13 @@ import { fetchCategories } from "@/shared/api/accounting";
 import { formatCents } from "@/shared/lib/format";
 import { hasPermission } from "@/shared/lib/permissions";
 import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type { Budget, BudgetSummary, Category } from "@/shared/types/api";
 
 export function BudgetsView() {
   const { selectedOrganization } = useOrganization();
+  const { t, locale } = useTranslation();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedBudgetId, setSelectedBudgetId] = useState<string>("");
@@ -55,7 +57,7 @@ export function BudgetsView() {
         setItemCategoryId(loadedCategories[0].id);
       }
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load budgets.");
+      setError(caught instanceof ApiError ? caught.message : t("budgets.loadFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +72,7 @@ export function BudgetsView() {
       const loadedSummary = await fetchBudgetSummary(selectedOrganization.id, budgetId);
       setSummary(loadedSummary);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to load budget summary.");
+      setError(caught instanceof ApiError ? caught.message : t("budgets.summaryFailed"));
     }
   }
 
@@ -105,7 +107,7 @@ export function BudgetsView() {
         }
       } catch (caught) {
         if (!isCancelled()) {
-          setError(caught instanceof ApiError ? caught.message : "Failed to load budgets.");
+          setError(caught instanceof ApiError ? caught.message : t("budgets.loadFailed"));
         }
       } finally {
         if (!isCancelled()) {
@@ -137,7 +139,7 @@ export function BudgetsView() {
         }
       } catch (caught) {
         if (!isCancelled()) {
-          setError(caught instanceof ApiError ? caught.message : "Failed to load budget summary.");
+          setError(caught instanceof ApiError ? caught.message : t("budgets.summaryFailed"));
         }
       }
     });
@@ -159,7 +161,7 @@ export function BudgetsView() {
       setSelectedBudgetId(created.id);
       await loadBudgets();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to create budget.");
+      setError(caught instanceof ApiError ? caught.message : t("budgets.createFailed"));
     }
   }
 
@@ -170,7 +172,7 @@ export function BudgetsView() {
     }
     const amountCents = Math.round(Number.parseFloat(itemAmount) * 100);
     if (!Number.isFinite(amountCents) || amountCents < 0) {
-      setError("Budget amount must be zero or greater.");
+      setError(t("budgets.amountNonNegative"));
       return;
     }
     setError(null);
@@ -179,7 +181,7 @@ export function BudgetsView() {
       setItemAmount("");
       await loadSummary(selectedBudgetId);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "Failed to save budget item.");
+      setError(caught instanceof ApiError ? caught.message : t("budgets.saveItemFailed"));
     }
   }
 
@@ -188,7 +190,7 @@ export function BudgetsView() {
   }
 
   if (isLoading) {
-    return <p className="muted">Loading budgets...</p>;
+    return <p className="muted">{t("budgets.loading")}</p>;
   }
 
   return (
@@ -197,11 +199,11 @@ export function BudgetsView() {
 
       {canWrite ? (
         <section className="card card-wide">
-          <h2>Create budget</h2>
+          <h2>{t("budgets.createBudget")}</h2>
           <form className="inline-form" onSubmit={handleCreateBudget}>
             <input
               type="text"
-              placeholder="Budget name"
+              placeholder={t("budgets.budgetName")}
               value={budgetName}
               onChange={(event) => setBudgetName(event.target.value)}
               required
@@ -213,20 +215,20 @@ export function BudgetsView() {
               required
             />
             <button type="submit" className="inline-button">
-              Create
+              {t("common.create")}
             </button>
           </form>
         </section>
       ) : null}
 
       <section className="card card-wide">
-        <h2>Budgets</h2>
+        <h2>{t("budgets.budgets")}</h2>
         {budgets.length === 0 ? (
-          <p className="muted">No budgets yet.</p>
+          <p className="muted">{t("budgets.noBudgets")}</p>
         ) : (
           <>
             <label>
-              Selected budget
+              {t("budgets.selectedBudget")}
               <select
                 value={selectedBudgetId}
                 onChange={(event) => setSelectedBudgetId(event.target.value)}
@@ -241,16 +243,16 @@ export function BudgetsView() {
             {summary ? (
               <dl className="metric-list">
                 <div>
-                  <dt>Total budget</dt>
-                  <dd>{formatCents(summary.totalBudgetCents)}</dd>
+                  <dt>{t("budgets.totalBudget")}</dt>
+                  <dd>{formatCents(summary.totalBudgetCents, "EUR", locale)}</dd>
                 </div>
                 <div>
-                  <dt>Total expenses</dt>
-                  <dd>{formatCents(summary.totalExpenseCents)}</dd>
+                  <dt>{t("budgets.totalExpenses")}</dt>
+                  <dd>{formatCents(summary.totalExpenseCents, "EUR", locale)}</dd>
                 </div>
                 <div>
-                  <dt>Remaining</dt>
-                  <dd>{formatCents(summary.totalBudgetCents - summary.totalExpenseCents)}</dd>
+                  <dt>{t("budgets.remaining")}</dt>
+                  <dd>{formatCents(summary.totalBudgetCents - summary.totalExpenseCents, "EUR", locale)}</dd>
                 </div>
               </dl>
             ) : null}
@@ -260,7 +262,7 @@ export function BudgetsView() {
 
       {canWrite && selectedBudgetId && categories.length > 0 ? (
         <section className="card card-wide">
-          <h2>Budget item</h2>
+          <h2>{t("budgets.budgetItem")}</h2>
           <form className="inline-form" onSubmit={handleUpsertItem}>
             <select
               value={itemCategoryId}
@@ -277,13 +279,13 @@ export function BudgetsView() {
               type="number"
               step="0.01"
               min="0"
-              placeholder="Amount"
+              placeholder={t("common.amount")}
               value={itemAmount}
               onChange={(event) => setItemAmount(event.target.value)}
               required
             />
             <button type="submit" className="inline-button">
-              Save item
+              {t("budgets.saveItem")}
             </button>
           </form>
         </section>

@@ -15,6 +15,7 @@ import {
   getStoredOrganizationId,
   setStoredOrganizationId
 } from "@/shared/lib/storage";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 import type { MyOrganization } from "@/shared/types/api";
 
 type OrganizationContextValue = {
@@ -34,6 +35,7 @@ type OrganizationProviderProps = Readonly<{
 }>;
 
 export function OrganizationProvider({ children }: OrganizationProviderProps) {
+  const { t } = useTranslation();
   const [organizations, setOrganizations] = useState<MyOrganization[]>([]);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +65,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       if (caught instanceof ApiError) {
         setError(caught.message);
       } else {
-        setError("Failed to load organizations.");
+        setError(t("org.loadFailed"));
       }
     } finally {
       setIsLoading(false);

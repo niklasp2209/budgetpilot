@@ -5,6 +5,7 @@ import {
   defaultCustomToDate,
   type DateRangePreset
 } from "@/shared/lib/dateRange";
+import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
 type DateRangeFilterProps = Readonly<{
   preset: DateRangePreset;
@@ -15,12 +16,12 @@ type DateRangeFilterProps = Readonly<{
   onCustomToChange: (value: string) => void;
 }>;
 
-const PRESETS: { value: DateRangePreset; label: string }[] = [
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-  { value: "365d", label: "12 months" },
-  { value: "all", label: "All time" },
-  { value: "custom", label: "Custom" }
+const PRESET_KEYS: { value: DateRangePreset; key: string }[] = [
+  { value: "30d", key: "dateRange.days30" },
+  { value: "90d", key: "dateRange.days90" },
+  { value: "365d", key: "dateRange.months12" },
+  { value: "all", key: "dateRange.allTime" },
+  { value: "custom", key: "dateRange.custom" }
 ];
 
 export function DateRangeFilter({
@@ -31,12 +32,14 @@ export function DateRangeFilter({
   onCustomFromChange,
   onCustomToChange
 }: DateRangeFilterProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="date-range-filter">
       <select value={preset} onChange={(event) => onPresetChange(event.target.value as DateRangePreset)}>
-        {PRESETS.map((entry) => (
+        {PRESET_KEYS.map((entry) => (
           <option key={entry.value} value={entry.value}>
-            {entry.label}
+            {t(entry.key)}
           </option>
         ))}
       </select>

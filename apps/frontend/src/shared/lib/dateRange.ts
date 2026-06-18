@@ -1,3 +1,6 @@
+import type { Locale } from "@/shared/i18n/types";
+import { localeToIntl } from "@/shared/i18n/config";
+
 export type DateRangePreset = "30d" | "90d" | "365d" | "all" | "custom";
 
 export function defaultCustomFromDate(): string {
@@ -45,18 +48,26 @@ export function toLocalDateTimeInput(iso: string): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function formatDateRangeLabel(preset: DateRangePreset): string {
-  if (preset === "30d") {
-    return "Last 30 days";
-  }
-  if (preset === "90d") {
-    return "Last 90 days";
-  }
-  if (preset === "365d") {
-    return "Last 12 months";
-  }
-  if (preset === "all") {
-    return "All time";
-  }
-  return "Custom range";
+export function formatDateRangeLabel(preset: DateRangePreset, locale: Locale = "en"): string {
+  const labels =
+    locale === "de"
+      ? {
+          "30d": "Letzte 30 Tage",
+          "90d": "Letzte 90 Tage",
+          "365d": "Letzte 12 Monate",
+          all: "Gesamt",
+          custom: "Eigener Zeitraum"
+        }
+      : {
+          "30d": "Last 30 days",
+          "90d": "Last 90 days",
+          "365d": "Last 12 months",
+          all: "All time",
+          custom: "Custom range"
+        };
+  return labels[preset];
+}
+
+export function formatDateTime(iso: string, locale: Locale = "en"): string {
+  return new Date(iso).toLocaleString(localeToIntl(locale));
 }
