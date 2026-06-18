@@ -1,8 +1,10 @@
 package de.budgetpilot.finance.backend.me.dto;
 
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
 import org.jspecify.annotations.NonNull;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -13,7 +15,8 @@ public record MyOrganizationResponse(
         @NonNull UUID id,
         @NonNull String name,
         @NonNull String slug,
-        @NonNull MembershipRole role
+        @NonNull MembershipRole role,
+        @NonNull Set<OrganizationPermission> permissions
 ) {
 }
 

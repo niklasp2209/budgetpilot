@@ -48,6 +48,16 @@ public class AccountingController {
                 .toList();
     }
 
+    @DeleteMapping("/api/v1/organizations/{organizationId}/accounts/{accountId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID accountId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        accountingService.deleteAccount(organizationId, accountId, extractEmail(jwt));
+    }
+
     @PostMapping("/api/v1/organizations/{organizationId}/categories")
     @ResponseStatus(HttpStatus.CREATED)
     public @NonNull CategoryResponse createCategory(
@@ -68,6 +78,16 @@ public class AccountingController {
         return accountingService.listCategories(organizationId, extractEmail(jwt)).stream()
                 .map(accountingMapper::toCategoryResponse)
                 .toList();
+    }
+
+    @DeleteMapping("/api/v1/organizations/{organizationId}/categories/{categoryId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCategory(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID categoryId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        accountingService.deleteCategory(organizationId, categoryId, extractEmail(jwt));
     }
 
     @PostMapping("/api/v1/organizations/{organizationId}/transactions")
@@ -92,6 +112,16 @@ public class AccountingController {
         return accountingService.listTransactions(organizationId, extractEmail(jwt), from, to).stream()
                 .map(accountingMapper::toTransactionResponse)
                 .toList();
+    }
+
+    @DeleteMapping("/api/v1/organizations/{organizationId}/transactions/{transactionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTransaction(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID transactionId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        accountingService.deleteTransaction(organizationId, transactionId, extractEmail(jwt));
     }
 
     private @NonNull String extractEmail(@NonNull Jwt jwt) {

@@ -4,6 +4,8 @@ import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
 import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
 import de.budgetpilot.finance.backend.me.dto.MeResponse;
 import de.budgetpilot.finance.backend.me.dto.MyOrganizationResponse;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAccessContext;
+import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
@@ -25,6 +27,7 @@ public class MeService {
     private final AuthUserRepository authUserRepository;
     private final OrganizationMembershipRepository organizationMembershipRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrganizationAuthorizationService organizationAuthorizationService;
 
     /**
      * Returns the authenticated user representation.
@@ -71,11 +74,15 @@ public class MeService {
             if (organization == null) {
                 continue;
             }
+            OrganizationAccessContext accessContext = organizationAuthorizationService.resolveAccess(
+                    organizationId, user.getEmail()
+            );
             result.add(new MyOrganizationResponse(
                     organization.getId(),
                     organization.getName(),
                     organization.getSlug(),
-                    membership.getRole()
+                    membership.getRole(),
+                    accessContext.permissions()
             ));
         }
 

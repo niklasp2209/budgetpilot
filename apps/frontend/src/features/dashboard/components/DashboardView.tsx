@@ -7,7 +7,7 @@ import {
   fetchBudgets,
   fetchByCategory,
   fetchCashflow
-} from "@/shared/api/organizations";
+} from "@/shared/api/budgets";
 import { formatCents } from "@/shared/lib/format";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import type {

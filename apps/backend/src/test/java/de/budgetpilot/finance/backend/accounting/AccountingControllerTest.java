@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -75,6 +76,71 @@ class AccountingControllerTest extends AbstractPostgresIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].description").value("Lunch"));
+    }
+
+    @Test
+    void memberCanDeleteAccountingResources() throws Exception {
+        String accessToken = registerAndGetAccessToken("delete-acc@example.com");
+        String organizationId = createOrganization(accessToken, "Delete Org", "delete-org");
+
+        String accountId = createAccount(accessToken, organizationId);
+        String categoryId = createCategory(accessToken, organizationId);
+
+        String transactionResponse = mockMvc.perform(post("/api/v1/organizations/{organizationId}/transactions", organizationId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "accountId": "%s",
+                                  "categoryId": "%s",
+                                  "amountCents": 500,
+                                  "currency": "EUR",
+                                  "description": "Coffee"
+                                }
+                                """.formatted(accountId, categoryId)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String transactionId = extractJsonValue(transactionResponse, "id");
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}/transactions/{transactionId}", organizationId, transactionId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}/accounts/{accountId}", organizationId, accountId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}/categories/{categoryId}", organizationId, categoryId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void cannotDeleteAccountWithTransactions() throws Exception {
+        String accessToken = registerAndGetAccessToken("conflict-acc@example.com");
+        String organizationId = createOrganization(accessToken, "Conflict Org", "conflict-org");
+
+        String accountId = createAccount(accessToken, organizationId);
+        String categoryId = createCategory(accessToken, organizationId);
+
+        mockMvc.perform(post("/api/v1/organizations/{organizationId}/transactions", organizationId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "accountId": "%s",
+                                  "categoryId": "%s",
+                                  "amountCents": 100,
+                                  "currency": "EUR"
+                                }
+                                """.formatted(accountId, categoryId)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}/accounts/{accountId}", organizationId, accountId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
     }
 
     @Test

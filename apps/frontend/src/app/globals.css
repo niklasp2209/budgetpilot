@@ -169,8 +169,91 @@ button:disabled {
   border: 1px solid var(--border);
 }
 
+.app-nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.app-nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.app-nav-link:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.app-nav-link.active {
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.header-button {
+  margin-top: 0;
+}
+
 .app-main {
   padding: 24px;
+}
+
+.page-content {
+  display: grid;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-heading h1 {
+  margin: 0 0 8px;
+}
+
+.stack {
+  display: grid;
+  gap: 20px;
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+.inline-form input,
+.inline-form select {
+  margin-top: 0;
+}
+
+.inline-form button,
+.stack-form button {
+  margin-top: 0;
+}
+
+.inline-button {
+  width: 100%;
+}
+
+.stack-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.card-wide {
+  width: 100%;
+  max-width: none;
+  grid-column: 1 / -1;
 }
 
 .dashboard-page,
@@ -181,10 +264,6 @@ button:disabled {
 
 .dashboard-grid {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
-.card-wide {
-  grid-column: 1 / -1;
 }
 
 .metric-list {
@@ -224,8 +303,29 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  align-items: center;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
+}
+
+.row-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.danger-button {
+  margin-top: 0;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--negative);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: var(--error-bg);
 }
 
 .data-table {

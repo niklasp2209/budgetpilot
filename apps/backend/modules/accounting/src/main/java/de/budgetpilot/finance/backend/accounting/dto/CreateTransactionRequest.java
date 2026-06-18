@@ -18,7 +18,7 @@ public record CreateTransactionRequest(
         @NonNull @NotNull UUID categoryId,
         long amountCents,
         @NonNull @Pattern(regexp = "^[A-Z]{3}$") String currency,
-        @NonNull @NotNull OffsetDateTime bookedAt,
+        @Nullable OffsetDateTime bookedAt,
         @Nullable @Size(max = 1024) String description
 ) {
 }

@@ -6,6 +6,7 @@ import de.budgetpilot.finance.backend.accounting.domain.TransactionEntity;
 import de.budgetpilot.finance.backend.accounting.dto.CreateAccountRequest;
 import de.budgetpilot.finance.backend.accounting.dto.CreateCategoryRequest;
 import de.budgetpilot.finance.backend.accounting.dto.CreateTransactionRequest;
+import de.budgetpilot.finance.backend.accounting.exception.AccountingConflictException;
 import de.budgetpilot.finance.backend.accounting.exception.AccountingNotFoundException;
 import de.budgetpilot.finance.backend.accounting.repository.AccountRepository;
 import de.budgetpilot.finance.backend.accounting.repository.CategoryRepository;
@@ -100,15 +101,71 @@ public class AccountingService {
             throw new IllegalArgumentException("Transaction currency must match account currency.");
         }
 
+        OffsetDateTime bookedAt = request.bookedAt() != null ? request.bookedAt() : OffsetDateTime.now();
+
         return transactionRepository.save(TransactionEntity.createNew(
                 organizationId,
                 account.getId(),
                 category.getId(),
                 request.amountCents(),
                 currency,
-                request.bookedAt(),
+                bookedAt,
                 request.description()
         ));
+    }
+
+    @Transactional
+    public void deleteAccount(
+            @NonNull UUID organizationId,
+            @NonNull UUID accountId,
+            @NonNull String authenticatedEmail
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
+        AccountEntity account = accountRepository.findById(accountId)
+                .filter(value -> value.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new AccountingNotFoundException("Account not found."));
+        if (transactionRepository.existsByAccountId(account.getId())) {
+            throw new AccountingConflictException("Account cannot be deleted while transactions exist.");
+        }
+        accountRepository.delete(account);
+    }
+
+    @Transactional
+    public void deleteCategory(
+            @NonNull UUID organizationId,
+            @NonNull UUID categoryId,
+            @NonNull String authenticatedEmail
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
+        CategoryEntity category = categoryRepository.findById(categoryId)
+                .filter(value -> value.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new AccountingNotFoundException("Category not found."));
+        if (transactionRepository.existsByCategoryId(category.getId())) {
+            throw new AccountingConflictException("Category cannot be deleted while transactions exist.");
+        }
+        if (transactionRepository.existsBudgetItemByCategoryId(category.getId())) {
+            throw new AccountingConflictException("Category cannot be deleted while budget items exist.");
+        }
+        categoryRepository.delete(category);
+    }
+
+    @Transactional
+    public void deleteTransaction(
+            @NonNull UUID organizationId,
+            @NonNull UUID transactionId,
+            @NonNull String authenticatedEmail
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
+        );
+        TransactionEntity transaction = transactionRepository.findById(transactionId)
+                .filter(value -> value.getOrganizationId().equals(organizationId))
+                .orElseThrow(() -> new AccountingNotFoundException("Transaction not found."));
+        transactionRepository.delete(transaction);
     }
 
     @Transactional(readOnly = true)

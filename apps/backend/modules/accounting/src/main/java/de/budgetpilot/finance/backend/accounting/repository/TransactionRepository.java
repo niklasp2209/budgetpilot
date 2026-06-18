@@ -3,6 +3,8 @@ package de.budgetpilot.finance.backend.accounting.repository;
 import de.budgetpilot.finance.backend.accounting.domain.TransactionEntity;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -18,5 +20,12 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
             @NonNull OffsetDateTime from,
             @NonNull OffsetDateTime to
     );
+
+    boolean existsByAccountId(@NonNull UUID accountId);
+
+    boolean existsByCategoryId(@NonNull UUID categoryId);
+
+    @Query(value = "SELECT EXISTS(SELECT 1 FROM budget_items WHERE category_id = :categoryId)", nativeQuery = true)
+    boolean existsBudgetItemByCategoryId(@Param("categoryId") @NonNull UUID categoryId);
 }
 

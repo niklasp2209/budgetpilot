@@ -1,12 +1,5 @@
 import { apiRequest } from "@/shared/api/client";
-import type {
-  Budget,
-  BudgetVsActualReport,
-  CashflowReport,
-  CategoryAmount,
-  MeResponse,
-  MyOrganization
-} from "@/shared/types/api";
+import type { MeResponse, MyOrganization } from "@/shared/types/api";
 
 export function fetchMe(): Promise<MeResponse> {
   return apiRequest<MeResponse>("/api/v1/me");
@@ -28,25 +21,4 @@ export function createOrganization(name: string, slug: string): Promise<MyOrgani
     }
     return created;
   });
-}
-
-export function fetchCashflow(organizationId: string): Promise<CashflowReport> {
-  return apiRequest<CashflowReport>(`/api/v1/organizations/${organizationId}/reports/cashflow`);
-}
-
-export function fetchByCategory(organizationId: string): Promise<CategoryAmount[]> {
-  return apiRequest<CategoryAmount[]>(`/api/v1/organizations/${organizationId}/reports/by-category`);
-}
-
-export function fetchBudgets(organizationId: string): Promise<Budget[]> {
-  return apiRequest<Budget[]>(`/api/v1/organizations/${organizationId}/budgets`);
-}
-
-export function fetchBudgetVsActual(
-  organizationId: string,
-  budgetId: string
-): Promise<BudgetVsActualReport> {
-  return apiRequest<BudgetVsActualReport>(
-    `/api/v1/organizations/${organizationId}/reports/budget-vs-actual?budgetId=${budgetId}`
-  );
 }

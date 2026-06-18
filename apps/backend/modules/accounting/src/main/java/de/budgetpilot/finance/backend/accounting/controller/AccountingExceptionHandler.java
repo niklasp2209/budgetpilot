@@ -1,6 +1,7 @@
 package de.budgetpilot.finance.backend.accounting.controller;
 
 import de.budgetpilot.finance.backend.accounting.exception.AccountingAccessDeniedException;
+import de.budgetpilot.finance.backend.accounting.exception.AccountingConflictException;
 import de.budgetpilot.finance.backend.accounting.exception.AccountingNotFoundException;
 import de.budgetpilot.finance.backend.auth.controller.ErrorResponse;
 import org.jspecify.annotations.NonNull;
@@ -25,6 +26,12 @@ public class AccountingExceptionHandler {
     ResponseEntity<ErrorResponse> handleNotFound(@NonNull AccountingNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("ACCOUNTING_NOT_FOUND", exception.getMessage()));
+    }
+
+    @ExceptionHandler(AccountingConflictException.class)
+    ResponseEntity<ErrorResponse> handleConflict(@NonNull AccountingConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("ACCOUNTING_CONFLICT", exception.getMessage()));
     }
 }
 
