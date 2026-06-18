@@ -2,28 +2,38 @@ package de.budgetpilot.finance.backend.organization.service;
 
 import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
 import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
+import de.budgetpilot.finance.backend.auth.service.AuthUserStore;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationAccessContext;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
+import de.budgetpilot.finance.backend.organization.dto.AddOrganizationMemberRequest;
 import de.budgetpilot.finance.backend.organization.dto.CreateOrganizationRequest;
+import de.budgetpilot.finance.backend.organization.dto.OrganizationMemberResponse;
 import de.budgetpilot.finance.backend.organization.dto.UpdateMemberRoleRequest;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationAccessDeniedException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberOperationException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationSlugAlreadyExistsException;
+import de.budgetpilot.finance.backend.organization.mapper.OrganizationMapper;
+import de.budgetpilot.finance.backend.organization.repository.OrganizationMemberPermissionGroupRepository;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationMembershipRepository;
 import de.budgetpilot.finance.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -35,8 +45,12 @@ import java.util.UUID;
 public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationMembershipRepository organizationMembershipRepository;
+    private final OrganizationMemberPermissionGroupRepository organizationMemberPermissionGroupRepository;
     private final AuthUserRepository authUserRepository;
+    private final AuthUserStore authUserStore;
     private final OrganizationAuthorizationService organizationAuthorizationService;
+    private final OrganizationMapper organizationMapper;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Creates a new organization and owner membership.
@@ -86,22 +100,82 @@ public class OrganizationService {
                 .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
     }
 
-    /**
-     * Returns members for an organization if requester is member.
-     *
-     * @param organizationId organization identifier
-     * @param authenticatedEmail authenticated requester email
-     * @return membership entities
-     */
     @Transactional(readOnly = true)
-    public @NonNull List<OrganizationMembershipEntity> getMembers(
+    public @NonNull List<OrganizationMemberResponse> listMembers(
             @NonNull UUID organizationId,
             @NonNull String authenticatedEmail
     ) {
         organizationAuthorizationService.requirePermission(
                 organizationId, authenticatedEmail, OrganizationPermission.ORGANIZATION_READ
         );
-        return organizationMembershipRepository.findByIdOrganizationId(organizationId);
+        List<OrganizationMemberResponse> members = new ArrayList<>();
+        for (OrganizationMembershipEntity membership : organizationMembershipRepository.findByIdOrganizationId(organizationId)) {
+            UUID userId = membership.getId().getUserId();
+            AuthUserEntity user = authUserRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalStateException("Member user was not found."));
+            List<UUID> groupIds = organizationMemberPermissionGroupRepository
+                    .findByIdOrganizationIdAndIdUserId(organizationId, userId)
+                    .stream()
+                    .map(assignment -> assignment.getId().getGroupId())
+                    .toList();
+            members.add(organizationMapper.toOrganizationMemberResponse(
+                    membership, user.getEmail(), new HashSet<>(groupIds)
+            ));
+        }
+        return List.copyOf(members);
+    }
+
+    /**
+     * Adds a member directly by email, creating a user account when needed.
+     *
+     * @param organizationId organization identifier
+     * @param request add member payload
+     * @param authenticatedEmail authenticated requester email
+     * @return created or existing member response
+     */
+    @Transactional
+    public @NonNull OrganizationMemberResponse addMember(
+            @NonNull UUID organizationId,
+            @NonNull AddOrganizationMemberRequest request,
+            @NonNull String authenticatedEmail
+    ) {
+        OrganizationAccessContext requesterContext = organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.MEMBERS_MANAGE
+        );
+
+        MembershipRole newRole = request.role();
+        if (newRole == MembershipRole.OWNER) {
+            throw new OrganizationMemberOperationException("Cannot assign OWNER role.");
+        }
+        if (requesterContext.role() == MembershipRole.ADMIN && newRole == MembershipRole.ADMIN) {
+            throw new OrganizationAccessDeniedException("Organization access denied.");
+        }
+
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+        AuthUserEntity user = authUserRepository.findByEmail(normalizedEmail).orElse(null);
+        if (user == null) {
+            String password = request.password();
+            if (password == null || password.isBlank()) {
+                throw new OrganizationMemberOperationException("Password is required for new users.");
+            }
+            String passwordHash = Objects.requireNonNull(
+                    passwordEncoder.encode(password),
+                    "Password hash must not be null."
+            );
+            user = authUserStore.createUser(normalizedEmail, passwordHash)
+                    .map(created -> authUserRepository.findById(created.id())
+                            .orElseThrow(() -> new IllegalStateException("Created user was not found.")))
+                    .orElseThrow(() -> new OrganizationMemberOperationException("Email is already registered."));
+        }
+
+        if (organizationMembershipRepository.findByIdOrganizationIdAndIdUserId(organizationId, user.getId()).isPresent()) {
+            throw new OrganizationMemberOperationException("User is already a member.");
+        }
+
+        OrganizationMembershipEntity membership = organizationMembershipRepository.save(
+                OrganizationMembershipEntity.createNew(organizationId, user.getId(), newRole)
+        );
+        return organizationMapper.toOrganizationMemberResponse(membership, user.getEmail(), Set.of());
     }
 
     /**

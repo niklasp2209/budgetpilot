@@ -82,7 +82,58 @@ class OrganizationControllerTest extends de.budgetpilot.finance.backend.auth.Abs
         mockMvc.perform(get("/api/v1/organizations/{organizationId}/members", organizationId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].role").value("OWNER"));
+                .andExpect(jsonPath("$[0].role").value("OWNER"))
+                .andExpect(jsonPath("$[0].email").value("owner@example.com"));
+    }
+
+    @Test
+    void ownerCanAddMemberDirectly() throws Exception {
+        String ownerToken = registerAndGetAccessToken("owner-add@example.com");
+        String organizationId = createOrganization(ownerToken, "Add Org", "add-org");
+
+        mockMvc.perform(post("/api/v1/organizations/{organizationId}/members", organizationId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "new-member@example.com",
+                                  "password": "Password123!",
+                                  "role": "MEMBER"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("new-member@example.com"))
+                .andExpect(jsonPath("$.role").value("MEMBER"));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "new-member@example.com",
+                                  "password": "Password123!"
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void ownerCanAddExistingUserWithoutPassword() throws Exception {
+        registerAndGetAccessToken("existing-user@example.com");
+        String ownerToken = registerAndGetAccessToken("owner-existing@example.com");
+        String organizationId = createOrganization(ownerToken, "Existing Org", "existing-org");
+
+        mockMvc.perform(post("/api/v1/organizations/{organizationId}/members", organizationId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "existing-user@example.com",
+                                  "role": "VIEWER"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("existing-user@example.com"))
+                .andExpect(jsonPath("$.role").value("VIEWER"));
     }
 
     @Test

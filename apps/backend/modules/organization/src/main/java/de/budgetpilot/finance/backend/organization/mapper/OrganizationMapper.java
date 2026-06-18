@@ -7,6 +7,9 @@ import de.budgetpilot.finance.backend.organization.dto.OrganizationResponse;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * @author Niklas Petermeier
  * @since 05.05.2026
@@ -29,11 +32,17 @@ public class OrganizationMapper {
      * @param entity membership entity
      * @return organization member response
      */
-    public @NonNull OrganizationMemberResponse toOrganizationMemberResponse(@NonNull OrganizationMembershipEntity entity) {
+    public @NonNull OrganizationMemberResponse toOrganizationMemberResponse(
+            @NonNull OrganizationMembershipEntity entity,
+            @NonNull String email,
+            @NonNull Set<UUID> permissionGroupIds
+    ) {
         return new OrganizationMemberResponse(
                 entity.getId().getUserId(),
+                email,
                 entity.getRole(),
-                entity.getStatus()
+                entity.getStatus(),
+                Set.copyOf(permissionGroupIds)
         );
     }
 }

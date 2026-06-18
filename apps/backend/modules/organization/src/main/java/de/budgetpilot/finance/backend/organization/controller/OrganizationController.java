@@ -1,5 +1,6 @@
 package de.budgetpilot.finance.backend.organization.controller;
 
+import de.budgetpilot.finance.backend.organization.dto.AddOrganizationMemberRequest;
 import de.budgetpilot.finance.backend.organization.dto.CreateOrganizationRequest;
 import de.budgetpilot.finance.backend.organization.dto.OrganizationMemberResponse;
 import de.budgetpilot.finance.backend.organization.dto.OrganizationResponse;
@@ -78,9 +79,25 @@ public class OrganizationController {
         @AuthenticationPrincipal @NonNull Jwt jwt
     ) {
         String email = extractEmail(jwt);
-        return organizationService.getMembers(organizationId, email).stream()
-            .map(organizationMapper::toOrganizationMemberResponse)
-            .toList();
+        return organizationService.listMembers(organizationId, email);
+    }
+
+    @PostMapping("/{organizationId}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    /**
+     * Adds a member directly to the organization.
+     *
+     * @param organizationId organization identifier
+     * @param request add member payload
+     * @param jwt authenticated JWT token
+     * @return created member response
+     */
+    public @NonNull OrganizationMemberResponse addMember(
+            @PathVariable @NonNull UUID organizationId,
+            @Valid @RequestBody @NonNull AddOrganizationMemberRequest request,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        return organizationService.addMember(organizationId, request, extractEmail(jwt));
     }
 
     @PatchMapping("/{organizationId}/members/{userId}/role")

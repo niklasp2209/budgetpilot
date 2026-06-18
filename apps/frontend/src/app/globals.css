@@ -312,6 +312,25 @@ button:disabled {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.row-actions button {
+  margin-top: 0;
+  min-height: 40px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.row-actions .danger-button {
+  background: transparent;
+  color: var(--negative);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+.row-actions .danger-button:hover:not(:disabled) {
+  background: var(--error-bg);
 }
 
 .danger-button {
@@ -345,6 +364,73 @@ button:disabled {
   font-weight: 600;
 }
 
+.data-table select {
+  margin-top: 0;
+  width: auto;
+  min-width: 120px;
+}
+
+.role-static {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 120px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  box-sizing: border-box;
+}
+
 .setup-card {
   margin: 0 auto;
+}
+
+.checkbox-group {
+  display: grid;
+  gap: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  font-size: 0.875rem;
+}
+
+.checkbox-label input {
+  width: auto;
+  margin: 0;
+}
+
+.group-list {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.group-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.permission-tags {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+
+.card h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
 }

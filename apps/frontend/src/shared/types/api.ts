@@ -28,6 +28,34 @@ export type MeResponse = {
 
 export type MembershipRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
 
+export type OrganizationMember = {
+  userId: string;
+  email: string;
+  role: MembershipRole;
+  status: string;
+  permissionGroupIds: string[];
+};
+
+export type PermissionGroup = {
+  id: string;
+  name: string;
+  permissions: OrganizationPermission[];
+};
+
+export const ASSIGNABLE_MEMBERSHIP_ROLES: MembershipRole[] = ["ADMIN", "MEMBER", "VIEWER"];
+
+export const ASSIGNABLE_PERMISSIONS: OrganizationPermission[] = [
+  "ORGANIZATION_READ",
+  "MEMBERS_MANAGE",
+  "INVITES_MANAGE",
+  "ACCOUNTING_READ",
+  "ACCOUNTING_WRITE",
+  "BUDGET_READ",
+  "BUDGET_WRITE",
+  "REPORTING_READ",
+  "PERMISSION_GROUPS_MANAGE"
+];
+
 export type MyOrganization = {
   id: string;
   name: string;
