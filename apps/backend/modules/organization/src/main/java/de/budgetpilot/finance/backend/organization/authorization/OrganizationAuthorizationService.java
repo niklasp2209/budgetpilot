@@ -42,7 +42,9 @@ public class OrganizationAuthorizationService {
                 .findByIdOrganizationIdAndIdUserId(organizationId, user.getId())
                 .orElseThrow(() -> new OrganizationAccessDeniedException("Organization access denied."));
 
-        Set<OrganizationPermission> permissions = organizationPermissionResolver.resolve(membership.getRole());
+        Set<OrganizationPermission> permissions = organizationPermissionResolver.resolve(
+                organizationId, user.getId(), membership.getRole()
+        );
         return new OrganizationAccessContext(user.getId(), organizationId, membership.getRole(), permissions);
     }
 

@@ -61,6 +61,9 @@ public class AuthUserStore {
         jdbcTemplate.execute("DELETE FROM transactions");
         jdbcTemplate.execute("DELETE FROM categories");
         jdbcTemplate.execute("DELETE FROM accounts");
+        jdbcTemplate.execute("DELETE FROM organization_member_permission_groups");
+        jdbcTemplate.execute("DELETE FROM organization_permission_group_permissions");
+        jdbcTemplate.execute("DELETE FROM organization_permission_groups");
         jdbcTemplate.execute("DELETE FROM organization_invitations");
         jdbcTemplate.execute("DELETE FROM organization_memberships");
         jdbcTemplate.execute("DELETE FROM organizations");

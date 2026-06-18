@@ -16,17 +16,16 @@ import java.util.Set;
  * @since 11.05.2026
  */
 @Component
-public class RoleBasedOrganizationPermissionResolver implements OrganizationPermissionResolver {
+public class RoleBasedOrganizationPermissionResolver {
     private static final Map<MembershipRole, Set<OrganizationPermission>> ROLE_PERMISSIONS = buildRolePermissions();
 
     /**
-     * Resolves permissions for one membership role.
+     * Resolves permissions granted by one membership role.
      *
      * @param role membership role
-     * @return effective permissions
+     * @return role permissions
      */
-    @Override
-    public @NonNull Set<OrganizationPermission> resolve(@NonNull MembershipRole role) {
+    public @NonNull Set<OrganizationPermission> resolveRole(@NonNull MembershipRole role) {
         return ROLE_PERMISSIONS.getOrDefault(role, Set.of());
     }
 
@@ -45,6 +44,7 @@ public class RoleBasedOrganizationPermissionResolver implements OrganizationPerm
         Set<OrganizationPermission> adminPermissions = EnumSet.copyOf(memberPermissions);
         adminPermissions.add(OrganizationPermission.MEMBERS_MANAGE);
         adminPermissions.add(OrganizationPermission.INVITES_MANAGE);
+        adminPermissions.add(OrganizationPermission.PERMISSION_GROUPS_MANAGE);
 
         Set<OrganizationPermission> ownerPermissions = EnumSet.copyOf(adminPermissions);
 

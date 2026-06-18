@@ -16,5 +16,6 @@ public enum OrganizationPermission {
     ACCOUNTING_WRITE,
     BUDGET_READ,
     BUDGET_WRITE,
-    REPORTING_READ
+    REPORTING_READ,
+    PERMISSION_GROUPS_MANAGE
 }

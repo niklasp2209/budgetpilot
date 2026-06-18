@@ -6,6 +6,8 @@ import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberN
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberOperationException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationSlugAlreadyExistsException;
+import de.budgetpilot.finance.backend.organization.exception.PermissionGroupConflictException;
+import de.budgetpilot.finance.backend.organization.exception.PermissionGroupNotFoundException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,5 +66,17 @@ public class OrganizationExceptionHandler {
     ResponseEntity<ErrorResponse> handleMemberOperation(@NonNull OrganizationMemberOperationException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("ORGANIZATION_MEMBER_INVALID", exception.getMessage()));
+    }
+
+    @ExceptionHandler(PermissionGroupNotFoundException.class)
+    ResponseEntity<ErrorResponse> handlePermissionGroupNotFound(@NonNull PermissionGroupNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("PERMISSION_GROUP_NOT_FOUND", exception.getMessage()));
+    }
+
+    @ExceptionHandler(PermissionGroupConflictException.class)
+    ResponseEntity<ErrorResponse> handlePermissionGroupConflict(@NonNull PermissionGroupConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("PERMISSION_GROUP_CONFLICT", exception.getMessage()));
     }
 }
