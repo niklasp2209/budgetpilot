@@ -82,6 +82,42 @@ public class BudgetController {
         );
     }
 
+    @GetMapping("/api/v1/organizations/{organizationId}/budgets/{budgetId}/items")
+    /**
+     * Lists budget items for one budget.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param jwt authenticated JWT token
+     * @return budget items
+     */
+    public @NonNull List<BudgetItemDetailResponse> listItems(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID budgetId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        return budgetService.listItems(organizationId, budgetId, extractEmail(jwt));
+    }
+
+    @DeleteMapping("/api/v1/organizations/{organizationId}/budgets/{budgetId}/items/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    /**
+     * Deletes one budget item.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param itemId budget item identifier
+     * @param jwt authenticated JWT token
+     */
+    public void deleteItem(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID budgetId,
+            @PathVariable @NonNull UUID itemId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        budgetService.deleteItem(organizationId, budgetId, itemId, extractEmail(jwt));
+    }
+
     @GetMapping("/api/v1/organizations/{organizationId}/budgets/{budgetId}/summary")
     /**
      * Returns the budget summary for one month.

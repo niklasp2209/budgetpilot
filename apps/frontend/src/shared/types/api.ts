@@ -132,5 +132,6 @@ export type BudgetSummary = {
 export type BudgetItem = {
   id: string;
   categoryId: string;
+  categoryName: string;
   amountCents: number;
 };

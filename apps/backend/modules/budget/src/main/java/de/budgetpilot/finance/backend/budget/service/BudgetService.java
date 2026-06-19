@@ -8,6 +8,7 @@ import de.budgetpilot.finance.backend.accounting.repository.TransactionRepositor
 import de.budgetpilot.finance.backend.budget.domain.BudgetEntity;
 import de.budgetpilot.finance.backend.budget.domain.BudgetItemEntity;
 import de.budgetpilot.finance.backend.budget.dto.CreateBudgetRequest;
+import de.budgetpilot.finance.backend.budget.dto.BudgetItemDetailResponse;
 import de.budgetpilot.finance.backend.budget.dto.UpsertBudgetItemRequest;
 import de.budgetpilot.finance.backend.budget.exception.BudgetNotFoundException;
 import de.budgetpilot.finance.backend.budget.repository.BudgetItemRepository;
@@ -116,6 +117,76 @@ public class BudgetService {
         }
 
         return budgetItemRepository.save(BudgetItemEntity.createNew(budgetId, category.getId(), request.amountCents()));
+    }
+
+    /**
+     * Returns all items for one budget.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param authenticatedEmail authenticated requester email
+     * @return budget items with category names
+     */
+    @Transactional(readOnly = true)
+    public @NonNull List<BudgetItemDetailResponse> listItems(
+            @NonNull UUID organizationId,
+            @NonNull UUID budgetId,
+            @NonNull String authenticatedEmail
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_READ
+        );
+        BudgetEntity budget = getBudgetOrThrow(organizationId, budgetId);
+        List<BudgetItemEntity> items = budgetItemRepository.findByBudgetId(budget.getId());
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> categoryIds = new HashSet<>();
+        for (BudgetItemEntity item : items) {
+            categoryIds.add(item.getCategoryId());
+        }
+
+        Map<UUID, String> categoryNames = new HashMap<>();
+        for (CategoryEntity category : categoryRepository.findAllById(categoryIds)) {
+            categoryNames.put(category.getId(), category.getName());
+        }
+
+        List<BudgetItemDetailResponse> responses = new ArrayList<>();
+        for (BudgetItemEntity item : items) {
+            String categoryName = categoryNames.getOrDefault(item.getCategoryId(), "Unknown");
+            responses.add(new BudgetItemDetailResponse(
+                    item.getId(),
+                    item.getCategoryId(),
+                    categoryName,
+                    item.getAmountCents()
+            ));
+        }
+        return responses;
+    }
+
+    /**
+     * Deletes one budget item.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param itemId budget item identifier
+     * @param authenticatedEmail authenticated requester email
+     */
+    @Transactional
+    public void deleteItem(
+            @NonNull UUID organizationId,
+            @NonNull UUID budgetId,
+            @NonNull UUID itemId,
+            @NonNull String authenticatedEmail
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_WRITE
+        );
+        getBudgetOrThrow(organizationId, budgetId);
+        BudgetItemEntity item = budgetItemRepository.findByIdAndBudgetId(itemId, budgetId)
+                .orElseThrow(() -> new BudgetNotFoundException("Budget item not found."));
+        budgetItemRepository.delete(item);
     }
 
     /**

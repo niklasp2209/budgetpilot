@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -58,6 +59,52 @@ class BudgetControllerTest extends AbstractPostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalBudgetCents").value(5000))
                 .andExpect(jsonPath("$.totalExpenseCents").value(1234));
+    }
+
+    @Test
+    void memberCanListUpdateAndDeleteBudgetItems() throws Exception {
+        String accessToken = registerAndGetAccessToken("budget-items@example.com");
+        String organizationId = createOrganization(accessToken, "Budget Items Org", "budget-items-org");
+
+        String foodCategoryId = createCategory(accessToken, organizationId, "Food");
+        String travelCategoryId = createCategory(accessToken, organizationId, "Travel");
+
+        LocalDate periodStart = LocalDate.now().withDayOfMonth(1);
+        String budgetId = createBudget(accessToken, organizationId, periodStart);
+        upsertItem(accessToken, organizationId, budgetId, foodCategoryId, 5000);
+        upsertItem(accessToken, organizationId, budgetId, travelCategoryId, 3000);
+
+        String listResponse = mockMvc.perform(get("/api/v1/organizations/{organizationId}/budgets/{budgetId}/items", organizationId, budgetId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].categoryName").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String itemId = extractJsonValue(listResponse, "id");
+
+        upsertItem(accessToken, organizationId, budgetId, foodCategoryId, 4500);
+
+        mockMvc.perform(get("/api/v1/organizations/{organizationId}/budgets/{budgetId}/items", organizationId, budgetId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.categoryId=='%s')].amountCents".formatted(foodCategoryId)).value(4500));
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}/budgets/{budgetId}/items/{itemId}", organizationId, budgetId, itemId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/organizations/{organizationId}/budgets/{budgetId}/items", organizationId, budgetId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        mockMvc.perform(get("/api/v1/organizations/{organizationId}/budgets/{budgetId}/summary", organizationId, budgetId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalBudgetCents").value(3000));
     }
 
     @Test
@@ -143,15 +190,19 @@ class BudgetControllerTest extends AbstractPostgresIntegrationTest {
     }
 
     private String createCategory(String accessToken, String organizationId) throws Exception {
+        return createCategory(accessToken, organizationId, "Food");
+    }
+
+    private String createCategory(String accessToken, String organizationId, String name) throws Exception {
         String response = mockMvc.perform(post("/api/v1/organizations/{organizationId}/categories", organizationId)
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Food",
+                                  "name": "%s",
                                   "type": "EXPENSE"
                                 }
-                                """))
+                                """.formatted(name)))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()

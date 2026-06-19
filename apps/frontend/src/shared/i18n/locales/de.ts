@@ -173,6 +173,14 @@ export const de: Messages = {
     totalExpenses: "Gesamtausgaben",
     remaining: "Verbleibend",
     budgetItem: "Budget-Posten",
+    budgetItems: "Budget-Posten",
+    noBudgetItems: "Noch keine Budget-Posten.",
+    noBudgetItemsDescription: "Füge Budget-Posten hinzu, um die geplanten Ausgaben pro Kategorie für diesen Monat festzulegen.",
+    loadingItems: "Budget-Posten werden geladen...",
+    loadItemsFailed: "Budget-Posten konnten nicht geladen werden.",
+    deleteItemFailed: "Budget-Posten konnte nicht gelöscht werden.",
+    updateItemFailed: "Budget-Posten konnte nicht aktualisiert werden.",
+    addBudgetItem: "Budget-Posten hinzufügen",
     saveItem: "Posten speichern"
   },
   members: {

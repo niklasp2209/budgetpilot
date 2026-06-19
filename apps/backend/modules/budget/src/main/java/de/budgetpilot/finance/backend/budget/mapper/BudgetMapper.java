@@ -2,6 +2,7 @@ package de.budgetpilot.finance.backend.budget.mapper;
 
 import de.budgetpilot.finance.backend.budget.domain.BudgetEntity;
 import de.budgetpilot.finance.backend.budget.domain.BudgetItemEntity;
+import de.budgetpilot.finance.backend.budget.dto.BudgetItemDetailResponse;
 import de.budgetpilot.finance.backend.budget.dto.BudgetItemResponse;
 import de.budgetpilot.finance.backend.budget.dto.BudgetResponse;
 import org.jspecify.annotations.NonNull;
@@ -19,6 +20,18 @@ public class BudgetMapper {
 
     public @NonNull BudgetItemResponse toBudgetItemResponse(@NonNull BudgetItemEntity entity) {
         return new BudgetItemResponse(entity.getId(), entity.getCategoryId(), entity.getAmountCents());
+    }
+
+    public @NonNull BudgetItemDetailResponse toBudgetItemDetailResponse(
+            @NonNull BudgetItemEntity entity,
+            @NonNull String categoryName
+    ) {
+        return new BudgetItemDetailResponse(
+                entity.getId(),
+                entity.getCategoryId(),
+                categoryName,
+                entity.getAmountCents()
+        );
     }
 }
 

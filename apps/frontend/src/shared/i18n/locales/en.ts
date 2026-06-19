@@ -166,6 +166,14 @@ export const en = {
     totalExpenses: "Total expenses",
     remaining: "Remaining",
     budgetItem: "Budget item",
+    budgetItems: "Budget items",
+    noBudgetItems: "No budget items yet.",
+    noBudgetItemsDescription: "Add budget items to plan spending per category for this month.",
+    loadingItems: "Loading budget items...",
+    loadItemsFailed: "Failed to load budget items.",
+    deleteItemFailed: "Failed to delete budget item.",
+    updateItemFailed: "Failed to update budget item.",
+    addBudgetItem: "Add budget item",
     saveItem: "Save item"
   },
   members: {

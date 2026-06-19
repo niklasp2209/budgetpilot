@@ -16,5 +16,7 @@ public interface BudgetItemRepository extends JpaRepository<BudgetItemEntity, UU
     @NonNull List<BudgetItemEntity> findByBudgetId(@NonNull UUID budgetId);
 
     @NonNull Optional<BudgetItemEntity> findByBudgetIdAndCategoryId(@NonNull UUID budgetId, @NonNull UUID categoryId);
+
+    @NonNull Optional<BudgetItemEntity> findByIdAndBudgetId(@NonNull UUID id, @NonNull UUID budgetId);
 }
 

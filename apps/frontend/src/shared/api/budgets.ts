@@ -34,6 +34,21 @@ export function upsertBudgetItem(
   });
 }
 
+export function fetchBudgetItems(organizationId: string, budgetId: string): Promise<BudgetItem[]> {
+  return apiRequest<BudgetItem[]>(`/api/v1/organizations/${organizationId}/budgets/${budgetId}/items`);
+}
+
+export function deleteBudgetItem(
+  organizationId: string,
+  budgetId: string,
+  itemId: string
+): Promise<void> {
+  return apiRequest<void>(
+    `/api/v1/organizations/${organizationId}/budgets/${budgetId}/items/${itemId}`,
+    { method: "DELETE" }
+  );
+}
+
 export function fetchBudgetSummary(organizationId: string, budgetId: string): Promise<BudgetSummary> {
   return apiRequest<BudgetSummary>(
     `/api/v1/organizations/${organizationId}/budgets/${budgetId}/summary`
