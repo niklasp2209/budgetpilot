@@ -24,7 +24,22 @@ export const de: Messages = {
     allAccounts: "Alle Konten",
     allCategories: "Alle Kategorien",
     readOnly: "Nur-Lese-Zugriff für deine Rolle.",
-    currencyEur: "EUR"
+    currencyEur: "EUR",
+    currency: "Währung"
+  },
+  currencies: {
+    EUR: "Euro",
+    USD: "US-Dollar",
+    GBP: "Britisches Pfund",
+    CHF: "Schweizer Franken",
+    JPY: "Japanischer Yen",
+    CAD: "Kanadischer Dollar",
+    AUD: "Australischer Dollar",
+    SEK: "Schwedische Krone",
+    NOK: "Norwegische Krone",
+    DKK: "Dänische Krone",
+    PLN: "Polnischer Zloty",
+    CZK: "Tschechische Krone"
   },
   i18n: {
     language: "Sprache"
@@ -33,7 +48,8 @@ export const de: Messages = {
     dashboard: "Dashboard",
     accounting: "Buchhaltung",
     budgets: "Budgets",
-    members: "Mitglieder"
+    members: "Mitglieder",
+    settings: "Einstellungen"
   },
   auth: {
     logout: "Abmelden",
@@ -181,7 +197,37 @@ export const de: Messages = {
     deleteItemFailed: "Budget-Posten konnte nicht gelöscht werden.",
     updateItemFailed: "Budget-Posten konnte nicht aktualisiert werden.",
     addBudgetItem: "Budget-Posten hinzufügen",
-    saveItem: "Posten speichern"
+    saveItem: "Posten speichern",
+    editBudget: "Budget bearbeiten",
+    updateBudget: "Budget aktualisieren",
+    updateBudgetFailed: "Budget konnte nicht aktualisiert werden.",
+    deleteBudget: "Budget löschen",
+    deleteBudgetFailed: "Budget konnte nicht gelöscht werden.",
+    deleteBudgetConfirm: "Dieses Budget endgültig löschen? Alle Budget-Posten gehen verloren.",
+    period: "Zeitraum"
+  },
+  settings: {
+    title: "Einstellungen",
+    subtitle: "Konto und Organisation verwalten.",
+    tabProfile: "Profil",
+    tabOrganization: "Organisation",
+    profile: "Profil",
+    profileDescription: "Kontodaten und Passwort.",
+    changePassword: "Passwort ändern",
+    currentPassword: "Aktuelles Passwort",
+    newPassword: "Neues Passwort",
+    confirmPassword: "Neues Passwort bestätigen",
+    passwordMismatch: "Die neuen Passwörter stimmen nicht überein.",
+    passwordChanged: "Passwort erfolgreich geändert.",
+    passwordChangeFailed: "Passwort konnte nicht geändert werden.",
+    organization: "Organisation",
+    organizationDescription: "Ausgewählte Organisation bearbeiten oder löschen.",
+    updateOrganization: "Organisation speichern",
+    updateOrganizationFailed: "Organisation konnte nicht aktualisiert werden.",
+    organizationUpdated: "Organisation erfolgreich aktualisiert.",
+    deleteOrganization: "Organisation löschen",
+    deleteOrganizationFailed: "Organisation konnte nicht gelöscht werden.",
+    deleteOrganizationConfirm: "Diese Organisation endgültig löschen? Alle Daten gehen verloren."
   },
   members: {
     loading: "Mitglieder werden geladen...",

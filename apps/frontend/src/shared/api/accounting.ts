@@ -5,10 +5,10 @@ export function fetchAccounts(organizationId: string): Promise<Account[]> {
   return apiRequest<Account[]>(`/api/v1/organizations/${organizationId}/accounts`);
 }
 
-export function createAccount(organizationId: string, name: string, currency: string): Promise<Account> {
+export function createAccount(organizationId: string, name: string): Promise<Account> {
   return apiRequest<Account>(`/api/v1/organizations/${organizationId}/accounts`, {
     method: "POST",
-    body: { name, currency }
+    body: { name }
   });
 }
 

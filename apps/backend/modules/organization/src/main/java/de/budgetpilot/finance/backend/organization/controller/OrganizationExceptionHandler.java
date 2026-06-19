@@ -2,6 +2,7 @@ package de.budgetpilot.finance.backend.organization.controller;
 
 import de.budgetpilot.finance.backend.auth.controller.ErrorResponse;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationAccessDeniedException;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationCurrencyException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberOperationException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
@@ -54,6 +55,12 @@ public class OrganizationExceptionHandler {
     ResponseEntity<ErrorResponse> handleForbidden(@NonNull OrganizationAccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse("ORGANIZATION_FORBIDDEN", exception.getMessage()));
+    }
+
+    @ExceptionHandler(OrganizationCurrencyException.class)
+    ResponseEntity<ErrorResponse> handleCurrency(@NonNull OrganizationCurrencyException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("ORGANIZATION_CURRENCY_INVALID", exception.getMessage()));
     }
 
     @ExceptionHandler(OrganizationMemberNotFoundException.class)

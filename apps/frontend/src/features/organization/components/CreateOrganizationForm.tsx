@@ -2,7 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { ApiError } from "@/shared/api/client";
+import { DEFAULT_ORGANIZATION_CURRENCY } from "@/shared/lib/currencies";
 import { slugify } from "@/shared/lib/format";
+import { CurrencySelect } from "@/features/organization/components/CurrencySelect";
 import { useOrganization } from "@/features/organization/context/OrganizationProvider";
 import { useTranslation } from "@/features/i18n/context/I18nProvider";
 
@@ -11,6 +13,7 @@ export function CreateOrganizationForm() {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [currency, setCurrency] = useState<string>(DEFAULT_ORGANIZATION_CURRENCY);
   const [slugTouched, setSlugTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,7 +23,7 @@ export function CreateOrganizationForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await createFirstOrganization(name.trim(), slug.trim());
+      await createFirstOrganization(name.trim(), slug.trim(), currency);
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -64,6 +67,7 @@ export function CreateOrganizationForm() {
           required
         />
       </label>
+      <CurrencySelect value={currency} onChange={setCurrency} />
       <button type="submit" disabled={isSubmitting}>
         {isSubmitting ? t("org.creating") : t("org.createOrganization")}
       </button>

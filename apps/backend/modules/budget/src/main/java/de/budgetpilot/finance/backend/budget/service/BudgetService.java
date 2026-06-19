@@ -10,11 +10,15 @@ import de.budgetpilot.finance.backend.budget.domain.BudgetItemEntity;
 import de.budgetpilot.finance.backend.budget.dto.CreateBudgetRequest;
 import de.budgetpilot.finance.backend.budget.dto.BudgetItemDetailResponse;
 import de.budgetpilot.finance.backend.budget.dto.UpsertBudgetItemRequest;
+import de.budgetpilot.finance.backend.budget.dto.UpdateBudgetRequest;
 import de.budgetpilot.finance.backend.budget.exception.BudgetNotFoundException;
 import de.budgetpilot.finance.backend.budget.repository.BudgetItemRepository;
 import de.budgetpilot.finance.backend.budget.repository.BudgetRepository;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
+import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
+import de.budgetpilot.finance.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -37,6 +41,7 @@ public class BudgetService {
     private final OrganizationAuthorizationService organizationAuthorizationService;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
+    private final OrganizationRepository organizationRepository;
 
     /**
      * Creates a new monthly budget.
@@ -59,8 +64,16 @@ public class BudgetService {
         if (periodStart.getDayOfMonth() != 1) {
             throw new IllegalArgumentException("periodStart must be the first day of month.");
         }
-        String currency = request.currency().trim().toUpperCase(Locale.ROOT);
-        return budgetRepository.save(BudgetEntity.createNew(organizationId, request.name().trim(), periodStart, currency));
+        OrganizationEntity organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
+        return budgetRepository.save(
+                BudgetEntity.createNew(
+                        organizationId,
+                        request.name().trim(),
+                        periodStart,
+                        organization.getCurrency()
+                )
+        );
     }
 
     /**
@@ -277,6 +290,55 @@ public class BudgetService {
                 organizationId, authenticatedEmail, OrganizationPermission.BUDGET_READ
         );
         return getBudgetOrThrow(organizationId, budgetId);
+    }
+
+    /**
+     * Updates one budget.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param authenticatedEmail authenticated requester email
+     * @param request budget update payload
+     * @return updated budget entity
+     */
+    @Transactional
+    public @NonNull BudgetEntity updateBudget(
+            @NonNull UUID organizationId,
+            @NonNull UUID budgetId,
+            @NonNull String authenticatedEmail,
+            @NonNull UpdateBudgetRequest request
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_WRITE
+        );
+        BudgetEntity budget = getBudgetOrThrow(organizationId, budgetId);
+        LocalDate periodStart = request.periodStart();
+        if (periodStart.getDayOfMonth() != 1) {
+            throw new IllegalArgumentException("periodStart must be the first day of month.");
+        }
+        budget.setName(request.name().trim());
+        budget.setPeriodStart(periodStart);
+        return budgetRepository.save(budget);
+    }
+
+    /**
+     * Deletes one budget and its items.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param authenticatedEmail authenticated requester email
+     */
+    @Transactional
+    public void deleteBudget(
+            @NonNull UUID organizationId,
+            @NonNull UUID budgetId,
+            @NonNull String authenticatedEmail
+    ) {
+        organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.BUDGET_WRITE
+        );
+        BudgetEntity budget = getBudgetOrThrow(organizationId, budgetId);
+        budgetRepository.delete(budget);
     }
 
     private @NonNull BudgetEntity getBudgetOrThrow(@NonNull UUID organizationId, @NonNull UUID budgetId) {

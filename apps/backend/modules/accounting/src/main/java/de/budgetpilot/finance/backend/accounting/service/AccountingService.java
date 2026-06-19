@@ -14,6 +14,9 @@ import de.budgetpilot.finance.backend.accounting.repository.CategoryRepository;
 import de.budgetpilot.finance.backend.accounting.repository.TransactionRepository;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
+import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
+import de.budgetpilot.finance.backend.organization.exception.OrganizationNotFoundException;
+import de.budgetpilot.finance.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -36,6 +39,7 @@ public class AccountingService {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final OrganizationAuthorizationService organizationAuthorizationService;
+    private final OrganizationRepository organizationRepository;
 
     @Transactional
     public @NonNull AccountEntity createAccount(
@@ -47,8 +51,9 @@ public class AccountingService {
                 organizationId, authenticatedEmail, OrganizationPermission.ACCOUNTING_WRITE
         );
         String name = request.name().trim();
-        String currency = request.currency().trim().toUpperCase(Locale.ROOT);
-        return accountRepository.save(AccountEntity.createNew(organizationId, name, currency));
+        OrganizationEntity organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
+        return accountRepository.save(AccountEntity.createNew(organizationId, name, organization.getCurrency()));
     }
 
     @Transactional(readOnly = true)

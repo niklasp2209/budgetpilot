@@ -28,6 +28,7 @@ import type { BudgetVsActualReport, CashflowReport, CategoryAmount } from "@/sha
 export function DashboardView() {
   const { selectedOrganization } = useOrganization();
   const { t, locale } = useTranslation();
+  const currency = selectedOrganization?.currency ?? "EUR";
   const [cashflow, setCashflow] = useState<CashflowReport | null>(null);
   const [categories, setCategories] = useState<CategoryAmount[]>([]);
   const [budgetVsActual, setBudgetVsActual] = useState<BudgetVsActualReport | null>(null);
@@ -154,7 +155,7 @@ export function DashboardView() {
                 <div>
                   <dt>{t("dashboard.net")}</dt>
                   <dd className={cashflow.netCents >= 0 ? "positive" : "negative"}>
-                    {formatCents(cashflow.netCents, "EUR", locale)}
+                    {formatCents(cashflow.netCents, currency, locale)}
                   </dd>
                 </div>
               </dl>
@@ -222,10 +223,10 @@ export function DashboardView() {
                     return (
                       <tr key={item.categoryId}>
                         <td>{item.categoryName}</td>
-                        <td>{formatCents(item.budgetCents, "EUR", locale)}</td>
-                        <td>{formatCents(item.actualCents, "EUR", locale)}</td>
+                        <td>{formatCents(item.budgetCents, currency, locale)}</td>
+                        <td>{formatCents(item.actualCents, currency, locale)}</td>
                         <td className={delta >= 0 ? "positive" : "negative"}>
-                          {formatCents(delta, "EUR", locale)}
+                          {formatCents(delta, currency, locale)}
                         </td>
                       </tr>
                     );

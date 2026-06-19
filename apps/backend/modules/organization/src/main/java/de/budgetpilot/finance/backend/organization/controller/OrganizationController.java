@@ -5,6 +5,7 @@ import de.budgetpilot.finance.backend.organization.dto.CreateOrganizationRequest
 import de.budgetpilot.finance.backend.organization.dto.OrganizationMemberResponse;
 import de.budgetpilot.finance.backend.organization.dto.OrganizationResponse;
 import de.budgetpilot.finance.backend.organization.dto.UpdateMemberRoleRequest;
+import de.budgetpilot.finance.backend.organization.dto.UpdateOrganizationRequest;
 import de.budgetpilot.finance.backend.organization.mapper.OrganizationMapper;
 import de.budgetpilot.finance.backend.organization.service.OrganizationService;
 import jakarta.validation.Valid;
@@ -134,6 +135,40 @@ public class OrganizationController {
             @AuthenticationPrincipal @NonNull Jwt jwt
     ) {
         organizationService.removeMember(organizationId, userId, extractEmail(jwt));
+    }
+
+    @PatchMapping("/{organizationId}")
+    /**
+     * Updates organization name and slug.
+     *
+     * @param organizationId organization identifier
+     * @param request organization update payload
+     * @param jwt authenticated JWT token
+     * @return updated organization response
+     */
+    public @NonNull OrganizationResponse updateOrganization(
+            @PathVariable @NonNull UUID organizationId,
+            @Valid @RequestBody @NonNull UpdateOrganizationRequest request,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        return organizationMapper.toOrganizationResponse(
+                organizationService.updateOrganization(organizationId, request, extractEmail(jwt))
+        );
+    }
+
+    @DeleteMapping("/{organizationId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    /**
+     * Deletes an organization.
+     *
+     * @param organizationId organization identifier
+     * @param jwt authenticated JWT token
+     */
+    public void deleteOrganization(
+            @PathVariable @NonNull UUID organizationId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        organizationService.deleteOrganization(organizationId, extractEmail(jwt));
     }
 
     /**

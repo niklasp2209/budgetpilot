@@ -11,6 +11,7 @@ import java.util.UUID;
 public record OrganizationResponse(
         @NonNull UUID id,
         @NonNull String name,
-        @NonNull String slug
+        @NonNull String slug,
+        @NonNull String currency
 ) {
 }

@@ -7,11 +7,11 @@ import org.jspecify.annotations.NonNull;
 
 /**
  * @author Niklas Petermeier
- * @since 05.05.2026
+ * @since 19.06.2026
  */
-public record CreateOrganizationRequest(
+public record UpdateOrganizationRequest(
         @NonNull @NotBlank @Size(max = 255) String name,
         @NonNull @NotBlank @Size(max = 255) String slug,
-        @Pattern(regexp = "^[A-Z]{3}$") String currency
+        @NonNull @NotBlank @Pattern(regexp = "^[A-Z]{3}$") String currency
 ) {
 }

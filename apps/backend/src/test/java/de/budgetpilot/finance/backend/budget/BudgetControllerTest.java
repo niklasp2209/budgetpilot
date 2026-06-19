@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -108,6 +110,39 @@ class BudgetControllerTest extends AbstractPostgresIntegrationTest {
     }
 
     @Test
+    void memberCanUpdateAndDeleteBudget() throws Exception {
+        String accessToken = registerAndGetAccessToken("budget-update@example.com");
+        String organizationId = createOrganization(accessToken, "Budget Update Org", "budget-update-org");
+        String categoryId = createCategory(accessToken, organizationId);
+
+        LocalDate periodStart = LocalDate.now().withDayOfMonth(1);
+        String budgetId = createBudget(accessToken, organizationId, periodStart);
+        upsertItem(accessToken, organizationId, budgetId, categoryId, 5000);
+
+        LocalDate newPeriodStart = periodStart.plusMonths(1);
+        mockMvc.perform(patch("/api/v1/organizations/{organizationId}/budgets/{budgetId}", organizationId, budgetId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Updated Budget",
+                                  "periodStart": "%s"
+                                }
+                                """.formatted(newPeriodStart)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated Budget"));
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}/budgets/{budgetId}", organizationId, budgetId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/organizations/{organizationId}/budgets", organizationId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void nonMemberCannotAccessBudgets() throws Exception {
         String ownerToken = registerAndGetAccessToken("owner-budget@example.com");
         String outsiderToken = registerAndGetAccessToken("outsider-budget@example.com");
@@ -125,8 +160,7 @@ class BudgetControllerTest extends AbstractPostgresIntegrationTest {
                         .content("""
                                 {
                                   "name": "May Budget",
-                                  "periodStart": "%s",
-                                  "currency": "EUR"
+                                  "periodStart": "%s"
                                 }
                                 """.formatted(periodStart)))
                 .andExpect(status().isCreated())
@@ -178,8 +212,7 @@ class BudgetControllerTest extends AbstractPostgresIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Main Account",
-                                  "currency": "EUR"
+                                  "name": "Main Account"
                                 }
                                 """))
                 .andExpect(status().isCreated())

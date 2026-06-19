@@ -139,6 +139,44 @@ public class BudgetController {
         return new BudgetSummaryResponse(budgetId, budget.getPeriodStart(), totalBudget, totalExpense);
     }
 
+    @PatchMapping("/api/v1/organizations/{organizationId}/budgets/{budgetId}")
+    /**
+     * Updates one budget.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param request budget update payload
+     * @param jwt authenticated JWT token
+     * @return updated budget response
+     */
+    public @NonNull BudgetResponse updateBudget(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID budgetId,
+            @Valid @RequestBody @NonNull UpdateBudgetRequest request,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        return budgetMapper.toBudgetResponse(
+                budgetService.updateBudget(organizationId, budgetId, extractEmail(jwt), request)
+        );
+    }
+
+    @DeleteMapping("/api/v1/organizations/{organizationId}/budgets/{budgetId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    /**
+     * Deletes one budget.
+     *
+     * @param organizationId organization identifier
+     * @param budgetId budget identifier
+     * @param jwt authenticated JWT token
+     */
+    public void deleteBudget(
+            @PathVariable @NonNull UUID organizationId,
+            @PathVariable @NonNull UUID budgetId,
+            @AuthenticationPrincipal @NonNull Jwt jwt
+    ) {
+        budgetService.deleteBudget(organizationId, budgetId, extractEmail(jwt));
+    }
+
     /**
      * Extracts email from JWT subject.
      *

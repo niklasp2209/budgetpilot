@@ -14,11 +14,28 @@ export function fetchBudgets(organizationId: string): Promise<Budget[]> {
 
 export function createBudget(
   organizationId: string,
-  payload: { name: string; periodStart: string; currency: string }
+  payload: { name: string; periodStart: string }
 ): Promise<Budget> {
   return apiRequest<Budget>(`/api/v1/organizations/${organizationId}/budgets`, {
     method: "POST",
     body: payload
+  });
+}
+
+export function updateBudget(
+  organizationId: string,
+  budgetId: string,
+  payload: { name: string; periodStart: string }
+): Promise<Budget> {
+  return apiRequest<Budget>(`/api/v1/organizations/${organizationId}/budgets/${budgetId}`, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
+export function deleteBudget(organizationId: string, budgetId: string): Promise<void> {
+  return apiRequest<void>(`/api/v1/organizations/${organizationId}/budgets/${budgetId}`, {
+    method: "DELETE"
   });
 }
 

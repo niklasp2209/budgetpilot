@@ -15,6 +15,7 @@ public record MyOrganizationResponse(
         @NonNull UUID id,
         @NonNull String name,
         @NonNull String slug,
+        @NonNull String currency,
         @NonNull MembershipRole role,
         @NonNull Set<OrganizationPermission> permissions
 ) {

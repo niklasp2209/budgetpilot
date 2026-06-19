@@ -13,4 +13,6 @@ import java.util.UUID;
  */
 public interface OrganizationRepository extends JpaRepository<OrganizationEntity, UUID> {
     @NonNull Optional<OrganizationEntity> findBySlug(@NonNull String slug);
+
+    @NonNull Optional<OrganizationEntity> findBySlugAndIdNot(@NonNull String slug, @NonNull UUID id);
 }

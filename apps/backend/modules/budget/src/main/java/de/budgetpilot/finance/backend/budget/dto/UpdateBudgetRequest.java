@@ -9,9 +9,9 @@ import java.time.LocalDate;
 
 /**
  * @author Niklas Petermeier
- * @since 11.05.2026
+ * @since 19.06.2026
  */
-public record CreateBudgetRequest(
+public record UpdateBudgetRequest(
         @NonNull @NotBlank @Size(max = 255) String name,
         @NonNull @NotNull LocalDate periodStart
 ) {

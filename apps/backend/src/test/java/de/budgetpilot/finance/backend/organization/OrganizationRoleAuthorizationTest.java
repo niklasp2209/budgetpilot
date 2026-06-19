@@ -64,8 +64,7 @@ class OrganizationRoleAuthorizationTest extends AbstractPostgresIntegrationTest 
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Viewer Account",
-                                  "currency": "EUR"
+                                  "name": "Viewer Account"
                                 }
                                 """))
                 .andExpect(status().isForbidden());
@@ -100,8 +99,7 @@ class OrganizationRoleAuthorizationTest extends AbstractPostgresIntegrationTest 
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Member Account",
-                                  "currency": "EUR"
+                                  "name": "Member Account"
                                 }
                                 """))
                 .andExpect(status().isCreated());
@@ -134,8 +132,7 @@ class OrganizationRoleAuthorizationTest extends AbstractPostgresIntegrationTest 
                         .content("""
                                 {
                                   "name": "Viewer Budget",
-                                  "periodStart": "%s",
-                                  "currency": "EUR"
+                                  "periodStart": "%s"
                                 }
                                 """.formatted(periodStart)))
                 .andExpect(status().isForbidden());
@@ -184,8 +181,7 @@ class OrganizationRoleAuthorizationTest extends AbstractPostgresIntegrationTest 
                         .content("""
                                 {
                                   "name": "May Budget",
-                                  "periodStart": "%s",
-                                  "currency": "EUR"
+                                  "periodStart": "%s"
                                 }
                                 """.formatted(periodStart)))
                 .andExpect(status().isCreated())
@@ -223,8 +219,7 @@ class OrganizationRoleAuthorizationTest extends AbstractPostgresIntegrationTest 
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Main Account",
-                                  "currency": "EUR"
+                                  "name": "Main Account"
                                 }
                                 """))
                 .andExpect(status().isCreated())

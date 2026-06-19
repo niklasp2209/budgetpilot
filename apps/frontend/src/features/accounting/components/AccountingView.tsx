@@ -24,6 +24,7 @@ import {
   toLocalDateTimeInput,
   type DateRangePreset
 } from "@/shared/lib/dateRange";
+import { getCurrencySymbol } from "@/shared/lib/currencies";
 import { formatCents } from "@/shared/lib/format";
 import { hasPermission } from "@/shared/lib/permissions";
 import { runInEffectAsync } from "@/shared/lib/runInEffectAsync";
@@ -51,7 +52,6 @@ export function AccountingView() {
   const canWrite = hasPermission(selectedOrganization, "ACCOUNTING_WRITE");
 
   const [accountName, setAccountName] = useState("");
-  const [accountCurrency, setAccountCurrency] = useState("EUR");
   const [categoryName, setCategoryName] = useState("");
   const [categoryType, setCategoryType] = useState<CategoryType>("EXPENSE");
 
@@ -217,7 +217,7 @@ export function AccountingView() {
     }
     setError(null);
     try {
-      await createAccount(selectedOrganization.id, accountName.trim(), accountCurrency.trim().toUpperCase());
+      await createAccount(selectedOrganization.id, accountName.trim());
       setAccountName("");
       await loadBaseData();
     } catch (caught) {
@@ -293,7 +293,7 @@ export function AccountingView() {
         accountId: transactionAccountId,
         categoryId: transactionCategoryId,
         amountCents,
-        currency: account.currency,
+        currency: selectedOrganization.currency,
         bookedAt,
         description: transactionDescription.trim() || undefined
       });
@@ -380,7 +380,7 @@ export function AccountingView() {
               <li key={account.id}>
                 <span>{account.name}</span>
                 <div className="row-actions">
-                  <span>{account.currency}</span>
+                  <span>{getCurrencySymbol(account.currency)}</span>
                   {canWrite ? (
                     <button
                       type="button"
@@ -403,14 +403,6 @@ export function AccountingView() {
               value={accountName}
               onChange={(event) => setAccountName(event.target.value)}
               required
-            />
-            <input
-              type="text"
-              placeholder={t("common.currencyEur")}
-              value={accountCurrency}
-              onChange={(event) => setAccountCurrency(event.target.value)}
-              required
-              maxLength={3}
             />
             <button type="submit" className="inline-button">
               {t("accounting.addAccount")}

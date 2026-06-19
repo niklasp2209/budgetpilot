@@ -68,6 +68,7 @@ class OrganizationControllerTest extends de.budgetpilot.finance.backend.auth.Abs
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Budget Team"))
+                .andExpect(jsonPath("$.currency").value("EUR"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -214,6 +215,35 @@ class OrganizationControllerTest extends de.budgetpilot.finance.backend.auth.Abs
                                 }
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void ownerCanUpdateAndDeleteOrganization() throws Exception {
+        String ownerToken = registerAndGetAccessToken("owner-update@example.com");
+        String organizationId = createOrganization(ownerToken, "Original Org", "original-org");
+
+        mockMvc.perform(patch("/api/v1/organizations/{organizationId}", organizationId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Renamed Org",
+                                  "slug": "renamed-org",
+                                  "currency": "USD"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Renamed Org"))
+                .andExpect(jsonPath("$.slug").value("renamed-org"))
+                .andExpect(jsonPath("$.currency").value("USD"));
+
+        mockMvc.perform(delete("/api/v1/organizations/{organizationId}", organizationId)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/organizations/{organizationId}", organizationId)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isNotFound());
     }
 
     private String registerAndGetAccessToken(String email) throws Exception {

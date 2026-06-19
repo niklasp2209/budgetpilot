@@ -7,12 +7,15 @@ import de.budgetpilot.finance.backend.organization.authorization.OrganizationAcc
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationAuthorizationService;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationPermission;
 import de.budgetpilot.finance.backend.organization.domain.MembershipRole;
+import de.budgetpilot.finance.backend.organization.domain.OrganizationCurrencies;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationEntity;
 import de.budgetpilot.finance.backend.organization.domain.OrganizationMembershipEntity;
 import de.budgetpilot.finance.backend.organization.dto.AddOrganizationMemberRequest;
 import de.budgetpilot.finance.backend.organization.dto.CreateOrganizationRequest;
 import de.budgetpilot.finance.backend.organization.dto.OrganizationMemberResponse;
 import de.budgetpilot.finance.backend.organization.dto.UpdateMemberRoleRequest;
+import de.budgetpilot.finance.backend.organization.dto.UpdateOrganizationRequest;
+import de.budgetpilot.finance.backend.organization.event.OrganizationCurrencyChangedEvent;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationAccessDeniedException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberNotFoundException;
 import de.budgetpilot.finance.backend.organization.exception.OrganizationMemberOperationException;
@@ -24,6 +27,7 @@ import de.budgetpilot.finance.backend.organization.repository.OrganizationMember
 import de.budgetpilot.finance.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +55,7 @@ public class OrganizationService {
     private final OrganizationAuthorizationService organizationAuthorizationService;
     private final OrganizationMapper organizationMapper;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * Creates a new organization and owner membership.
@@ -70,8 +75,9 @@ public class OrganizationService {
         }
 
         AuthUserEntity requester = findUserByEmail(authenticatedEmail);
+        String currency = OrganizationCurrencies.normalizeOrDefault(request.currency());
         OrganizationEntity organization = organizationRepository.save(
-                OrganizationEntity.createNew(request.name().trim(), normalizedSlug, requester.getId())
+                OrganizationEntity.createNew(request.name().trim(), normalizedSlug, requester.getId(), currency)
         );
 
         organizationMembershipRepository.save(
@@ -252,6 +258,69 @@ public class OrganizationService {
         }
 
         organizationMembershipRepository.delete(targetMembership);
+    }
+
+    /**
+     * Updates organization name and slug.
+     *
+     * @param organizationId organization identifier
+     * @param request organization update payload
+     * @param authenticatedEmail authenticated requester email
+     * @return updated organization entity
+     */
+    @Transactional
+    public @NonNull OrganizationEntity updateOrganization(
+            @NonNull UUID organizationId,
+            @NonNull UpdateOrganizationRequest request,
+            @NonNull String authenticatedEmail
+    ) {
+        OrganizationAccessContext requesterContext = organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ORGANIZATION_READ
+        );
+        if (requesterContext.role() != MembershipRole.OWNER && requesterContext.role() != MembershipRole.ADMIN) {
+            throw new OrganizationAccessDeniedException("Organization access denied.");
+        }
+
+        OrganizationEntity organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
+
+        String normalizedSlug = normalizeSlug(request.slug());
+        if (organizationRepository.findBySlugAndIdNot(normalizedSlug, organizationId).isPresent()) {
+            throw new OrganizationSlugAlreadyExistsException("Organization slug already exists.");
+        }
+
+        organization.setName(request.name().trim());
+        organization.setSlug(normalizedSlug);
+        String previousCurrency = organization.getCurrency();
+        String newCurrency = OrganizationCurrencies.normalize(request.currency());
+        organization.setCurrency(newCurrency);
+        OrganizationEntity saved = organizationRepository.save(organization);
+        if (!previousCurrency.equals(newCurrency)) {
+            applicationEventPublisher.publishEvent(
+                    new OrganizationCurrencyChangedEvent(organizationId, newCurrency)
+            );
+        }
+        return saved;
+    }
+
+    /**
+     * Deletes an organization and all related data.
+     *
+     * @param organizationId organization identifier
+     * @param authenticatedEmail authenticated requester email
+     */
+    @Transactional
+    public void deleteOrganization(@NonNull UUID organizationId, @NonNull String authenticatedEmail) {
+        OrganizationAccessContext requesterContext = organizationAuthorizationService.requirePermission(
+                organizationId, authenticatedEmail, OrganizationPermission.ORGANIZATION_READ
+        );
+        if (requesterContext.role() != MembershipRole.OWNER) {
+            throw new OrganizationAccessDeniedException("Organization access denied.");
+        }
+
+        OrganizationEntity organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organization not found."));
+        organizationRepository.delete(organization);
     }
 
     /**

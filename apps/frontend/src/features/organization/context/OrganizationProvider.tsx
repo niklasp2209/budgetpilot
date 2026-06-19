@@ -24,7 +24,7 @@ type OrganizationContextValue = {
   isLoading: boolean;
   error: string | null;
   selectOrganization: (organizationId: string) => void;
-  createFirstOrganization: (name: string, slug: string) => Promise<void>;
+  createFirstOrganization: (name: string, slug: string, currency: string) => Promise<void>;
   reload: () => Promise<void>;
 };
 
@@ -94,8 +94,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     setStoredOrganizationId(organizationId);
   }, []);
 
-  const createFirstOrganization = useCallback(async (name: string, slug: string) => {
-    const created = await createOrganization(name, slug);
+  const createFirstOrganization = useCallback(async (name: string, slug: string, currency: string) => {
+    const created = await createOrganization(name, slug, currency);
     setOrganizations((current) => [...current, created]);
     setSelectedOrganizationId(created.id);
     setStoredOrganizationId(created.id);

@@ -204,8 +204,7 @@ class AccountingControllerTest extends AbstractPostgresIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Main Account",
-                                  "currency": "EUR"
+                                  "name": "Main Account"
                                 }
                                 """))
                 .andExpect(status().isCreated())

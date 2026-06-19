@@ -33,7 +33,7 @@ public class BudgetEntity {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "period_start", nullable = false, updatable = false)
+    @Column(name = "period_start", nullable = false)
     private LocalDate periodStart;
 
     @Column(name = "currency", nullable = false, length = 3)

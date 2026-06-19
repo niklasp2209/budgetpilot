@@ -38,10 +38,14 @@ public class OrganizationEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "currency", nullable = false, length = 3)
+    private String currency;
+
     public static @NonNull OrganizationEntity createNew(
             @NonNull String name,
             @NonNull String slug,
-            @NonNull UUID createdBy
+            @NonNull UUID createdBy,
+            @NonNull String currency
     ) {
         OrganizationEntity entity = new OrganizationEntity();
         entity.setId(UUID.randomUUID());
@@ -49,6 +53,7 @@ public class OrganizationEntity {
         entity.setSlug(slug);
         entity.setCreatedBy(createdBy);
         entity.setCreatedAt(OffsetDateTime.now());
+        entity.setCurrency(currency);
         return entity;
     }
 }

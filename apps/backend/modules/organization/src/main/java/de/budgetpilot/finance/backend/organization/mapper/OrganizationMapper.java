@@ -23,7 +23,7 @@ public class OrganizationMapper {
      * @return organization response
      */
     public @NonNull OrganizationResponse toOrganizationResponse(@NonNull OrganizationEntity entity) {
-        return new OrganizationResponse(entity.getId(), entity.getName(), entity.getSlug());
+        return new OrganizationResponse(entity.getId(), entity.getName(), entity.getSlug(), entity.getCurrency());
     }
 
     /**

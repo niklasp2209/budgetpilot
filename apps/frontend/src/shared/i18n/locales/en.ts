@@ -22,7 +22,22 @@ export const en = {
     allAccounts: "All accounts",
     allCategories: "All categories",
     readOnly: "Read-only access for your role.",
-    currencyEur: "EUR"
+    currencyEur: "EUR",
+    currency: "Currency"
+  },
+  currencies: {
+    EUR: "Euro",
+    USD: "US Dollar",
+    GBP: "British Pound",
+    CHF: "Swiss Franc",
+    JPY: "Japanese Yen",
+    CAD: "Canadian Dollar",
+    AUD: "Australian Dollar",
+    SEK: "Swedish Krona",
+    NOK: "Norwegian Krone",
+    DKK: "Danish Krone",
+    PLN: "Polish Zloty",
+    CZK: "Czech Koruna"
   },
   i18n: {
     language: "Language"
@@ -31,7 +46,8 @@ export const en = {
     dashboard: "Dashboard",
     accounting: "Accounting",
     budgets: "Budgets",
-    members: "Members"
+    members: "Members",
+    settings: "Settings"
   },
   auth: {
     logout: "Logout",
@@ -174,7 +190,37 @@ export const en = {
     deleteItemFailed: "Failed to delete budget item.",
     updateItemFailed: "Failed to update budget item.",
     addBudgetItem: "Add budget item",
-    saveItem: "Save item"
+    saveItem: "Save item",
+    editBudget: "Edit budget",
+    updateBudget: "Update budget",
+    updateBudgetFailed: "Failed to update budget.",
+    deleteBudget: "Delete budget",
+    deleteBudgetFailed: "Failed to delete budget.",
+    deleteBudgetConfirm: "Delete this budget permanently? All budget items will be lost.",
+    period: "Period"
+  },
+  settings: {
+    title: "Settings",
+    subtitle: "Manage your account and organization.",
+    tabProfile: "Profile",
+    tabOrganization: "Organization",
+    profile: "Profile",
+    profileDescription: "Your account details and password.",
+    changePassword: "Change password",
+    currentPassword: "Current password",
+    newPassword: "New password",
+    confirmPassword: "Confirm new password",
+    passwordMismatch: "The new passwords do not match.",
+    passwordChanged: "Password updated successfully.",
+    passwordChangeFailed: "Failed to change password.",
+    organization: "Organization",
+    organizationDescription: "Update or delete the selected organization.",
+    updateOrganization: "Save organization",
+    updateOrganizationFailed: "Failed to update organization.",
+    organizationUpdated: "Organization updated successfully.",
+    deleteOrganization: "Delete organization",
+    deleteOrganizationFailed: "Failed to delete organization.",
+    deleteOrganizationConfirm: "Delete this organization permanently? All data will be lost."
   },
   members: {
     loading: "Loading members...",

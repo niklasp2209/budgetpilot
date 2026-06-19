@@ -97,8 +97,7 @@ class ReportingControllerTest extends AbstractPostgresIntegrationTest {
                         .content("""
                                 {
                                   "name": "May Budget",
-                                  "periodStart": "%s",
-                                  "currency": "EUR"
+                                  "periodStart": "%s"
                                 }
                                 """.formatted(periodStart)))
                 .andExpect(status().isCreated())
@@ -151,8 +150,7 @@ class ReportingControllerTest extends AbstractPostgresIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Main Account",
-                                  "currency": "EUR"
+                                  "name": "Main Account"
                                 }
                                 """))
                 .andExpect(status().isCreated())

@@ -61,8 +61,7 @@ class OrganizationPermissionGroupTest extends AbstractPostgresIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Viewer Account",
-                                  "currency": "EUR"
+                                  "name": "Viewer Account"
                                 }
                                 """))
                 .andExpect(status().isCreated());
@@ -82,8 +81,7 @@ class OrganizationPermissionGroupTest extends AbstractPostgresIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "name": "Blocked Account",
-                                  "currency": "EUR"
+                                  "name": "Blocked Account"
                                 }
                                 """))
                 .andExpect(status().isForbidden());

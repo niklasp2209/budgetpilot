@@ -1,7 +1,9 @@
 package de.budgetpilot.finance.backend.me.service;
 
 import de.budgetpilot.finance.backend.auth.domain.AuthUserEntity;
+import de.budgetpilot.finance.backend.auth.exception.InvalidCredentialsException;
 import de.budgetpilot.finance.backend.auth.repository.AuthUserRepository;
+import de.budgetpilot.finance.backend.me.dto.ChangePasswordRequest;
 import de.budgetpilot.finance.backend.me.dto.MeResponse;
 import de.budgetpilot.finance.backend.me.dto.MyOrganizationResponse;
 import de.budgetpilot.finance.backend.organization.authorization.OrganizationAccessContext;
@@ -12,10 +14,12 @@ import de.budgetpilot.finance.backend.organization.repository.OrganizationMember
 import de.budgetpilot.finance.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.Objects;
 
 /**
  * @author Niklas Petermeier
@@ -28,6 +32,7 @@ public class MeService {
     private final OrganizationMembershipRepository organizationMembershipRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationAuthorizationService organizationAuthorizationService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Returns the authenticated user representation.
@@ -81,6 +86,7 @@ public class MeService {
                     organization.getId(),
                     organization.getName(),
                     organization.getSlug(),
+                    organization.getCurrency(),
                     membership.getRole(),
                     accessContext.permissions()
             ));
@@ -88,6 +94,28 @@ public class MeService {
 
         result.sort(Comparator.comparing(MyOrganizationResponse::slug));
         return List.copyOf(result);
+    }
+
+    /**
+     * Changes the authenticated user's password.
+     *
+     * @param authenticatedEmail authenticated email
+     * @param request password change payload
+     */
+    @Transactional
+    public void changePassword(@NonNull String authenticatedEmail, @NonNull ChangePasswordRequest request) {
+        AuthUserEntity user = authUserRepository.findByEmail(normalizeEmail(authenticatedEmail))
+                .orElseThrow(() -> new IllegalStateException("Authenticated user was not found."));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Current password is invalid.");
+        }
+
+        user.setPasswordHash(Objects.requireNonNull(
+                passwordEncoder.encode(request.newPassword()),
+                "Password hash must not be null."
+        ));
+        authUserRepository.save(user);
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {

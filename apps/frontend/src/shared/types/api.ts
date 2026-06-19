@@ -60,6 +60,7 @@ export type MyOrganization = {
   id: string;
   name: string;
   slug: string;
+  currency: string;
   role: MembershipRole;
   permissions: OrganizationPermission[];
 };

@@ -4,10 +4,12 @@ import { FormEvent, useEffect, useState } from "react";
 import { ApiError } from "@/shared/api/client";
 import {
   createBudget,
+  deleteBudget,
   deleteBudgetItem,
   fetchBudgetItems,
   fetchBudgetSummary,
   fetchBudgets,
+  updateBudget,
   upsertBudgetItem
 } from "@/shared/api/budgets";
 import { fetchCategories } from "@/shared/api/accounting";
@@ -32,6 +34,7 @@ export function BudgetsView() {
   const [isLoadingItems, setIsLoadingItems] = useState(false);
 
   const canWrite = hasPermission(selectedOrganization, "BUDGET_WRITE");
+  const currency = selectedOrganization?.currency ?? "EUR";
 
   const [budgetName, setBudgetName] = useState("");
   const [budgetMonth, setBudgetMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -40,6 +43,21 @@ export function BudgetsView() {
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
+
+  const [editBudgetName, setEditBudgetName] = useState("");
+  const [editBudgetMonth, setEditBudgetMonth] = useState("");
+
+  const selectedBudget = budgets.find((budget) => budget.id === selectedBudgetId) ?? null;
+
+  useEffect(() => {
+    if (!selectedBudget) {
+      setEditBudgetName("");
+      setEditBudgetMonth("");
+      return;
+    }
+    setEditBudgetName(selectedBudget.name);
+    setEditBudgetMonth(selectedBudget.periodStart.slice(0, 7));
+  }, [selectedBudget?.id, selectedBudget?.name, selectedBudget?.periodStart]);
 
   async function loadBudgetData() {
     if (!selectedOrganization) {
@@ -187,8 +205,7 @@ export function BudgetsView() {
     try {
       const created = await createBudget(selectedOrganization.id, {
         name: budgetName.trim(),
-        periodStart: `${budgetMonth}-01`,
-        currency: "EUR"
+        periodStart: `${budgetMonth}-01`
       });
       setBudgetName("");
       setSelectedBudgetId(created.id);
@@ -258,6 +275,40 @@ export function BudgetsView() {
     }
   }
 
+  async function handleUpdateBudget(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedOrganization || !selectedBudgetId) {
+      return;
+    }
+    setError(null);
+    try {
+      await updateBudget(selectedOrganization.id, selectedBudgetId, {
+        name: editBudgetName.trim(),
+        periodStart: `${editBudgetMonth}-01`
+      });
+      await loadBudgetData();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t("budgets.updateBudgetFailed"));
+    }
+  }
+
+  async function handleDeleteBudget() {
+    if (!selectedOrganization || !selectedBudgetId) {
+      return;
+    }
+    if (!window.confirm(t("budgets.deleteBudgetConfirm"))) {
+      return;
+    }
+    setError(null);
+    try {
+      await deleteBudget(selectedOrganization.id, selectedBudgetId);
+      setSelectedBudgetId("");
+      await loadBudgetData();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t("budgets.deleteBudgetFailed"));
+    }
+  }
+
   if (!selectedOrganization) {
     return null;
   }
@@ -317,17 +368,48 @@ export function BudgetsView() {
               <dl className="metric-list">
                 <div>
                   <dt>{t("budgets.totalBudget")}</dt>
-                  <dd>{formatCents(summary.totalBudgetCents, "EUR", locale)}</dd>
+                  <dd>{formatCents(summary.totalBudgetCents, currency, locale)}</dd>
                 </div>
                 <div>
                   <dt>{t("budgets.totalExpenses")}</dt>
-                  <dd>{formatCents(summary.totalExpenseCents, "EUR", locale)}</dd>
+                  <dd>{formatCents(summary.totalExpenseCents, currency, locale)}</dd>
                 </div>
                 <div>
                   <dt>{t("budgets.remaining")}</dt>
-                  <dd>{formatCents(summary.totalBudgetCents - summary.totalExpenseCents, "EUR", locale)}</dd>
+                  <dd>{formatCents(summary.totalBudgetCents - summary.totalExpenseCents, currency, locale)}</dd>
                 </div>
               </dl>
+            ) : null}
+            {canWrite && selectedBudget ? (
+              <form className="stack-form" onSubmit={handleUpdateBudget}>
+                <h3>{t("budgets.editBudget")}</h3>
+                <div className="inline-form">
+                  <input
+                    type="text"
+                    placeholder={t("budgets.budgetName")}
+                    value={editBudgetName}
+                    onChange={(event) => setEditBudgetName(event.target.value)}
+                    required
+                  />
+                  <input
+                    type="month"
+                    value={editBudgetMonth}
+                    onChange={(event) => setEditBudgetMonth(event.target.value)}
+                    required
+                    aria-label={t("budgets.period")}
+                  />
+                  <button type="submit" className="inline-button">
+                    {t("budgets.updateBudget")}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={() => void handleDeleteBudget()}
+                >
+                  {t("budgets.deleteBudget")}
+                </button>
+              </form>
             ) : null}
           </>
         )}
@@ -387,7 +469,7 @@ export function BudgetsView() {
                   ) : (
                     <tr key={item.id}>
                       <td>{item.categoryName}</td>
-                      <td>{formatCents(item.amountCents, "EUR", locale)}</td>
+                      <td>{formatCents(item.amountCents, currency, locale)}</td>
                       {canWrite ? (
                         <td>
                           <div className="row-actions">
